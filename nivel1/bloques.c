@@ -16,6 +16,8 @@ static int descriptor = 0; // Descriptor del fichero
 int bmount(const char *camino)
 {
 
+    umask(000); // Permisos rw para todos los usuarios
+    
     descriptor = open(camino, O_RDWR | O_CREAT, 0666);
     if (descriptor == -1)
     {
