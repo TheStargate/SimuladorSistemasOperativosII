@@ -1,3 +1,5 @@
+// Librería que contiene constantes y funciones para el manejo de ficheros basicos
+
 #include <time.h>
 #include "bloques.h"
 
@@ -6,11 +8,11 @@
 
 #define INODOSIZE 128 // tamaño en bytes de un inodo
 
-int initSB();
+int tamMB(unsigned int nbloques);
+int tamAI(unsigned int ninodos);
+int initSB(unsigned int nbloques, unsigned int ninodos);
 int initMB();
 int initAI();
-int tamMB();
-int tamAI();
 
 struct superbloque
 {
