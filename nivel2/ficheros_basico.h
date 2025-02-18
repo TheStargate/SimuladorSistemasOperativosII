@@ -8,12 +8,6 @@
 
 #define INODOSIZE 128 // tamaño en bytes de un inodo
 
-int tamMB(unsigned int nbloques);
-int tamAI(unsigned int ninodos);
-int initSB(unsigned int nbloques, unsigned int ninodos);
-int initMB();
-int initAI();
-
 struct superbloque
 {
     unsigned int posPrimerBloqueMB;                      // Posición absoluta del primer bloque del mapa de bits
@@ -63,3 +57,9 @@ struct inodo
     char padding[INODOSIZE - 2 * sizeof(unsigned char) - 4 * sizeof(time_t) - 18 * sizeof(unsigned int) - 6 * sizeof(unsigned char)];
     // Fijarse que también se resta lo que ocupen las variables de alineación utilizadas!!!
 };
+
+int tamMB(unsigned int nbloques);
+int tamAI(unsigned int ninodos);
+int initSB(unsigned int nbloques, unsigned int ninodos);
+int initMB();
+int initAI();
