@@ -7,6 +7,8 @@
 #define tamSB 1
 
 #define INODOSIZE 128 // tamaño en bytes de un inodo
+#define BYTE 8 // tamaño en bits de un Byte
+
 
 struct superbloque
 {

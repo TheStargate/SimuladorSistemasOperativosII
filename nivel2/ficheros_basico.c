@@ -16,13 +16,13 @@ struct superbloque SB; // Declaración de la variable global SB
 int tamMB(unsigned int nbloques)
 {
 
-    if (nbloques % 8 == 0)
+    if (nbloques % BYTE == 0)
     {
-        return nbloques / 8;
+        return nbloques / BYTE;
     }
     else
     {
-        return nbloques / 8 + 1;
+        return nbloques / BYTE + 1;
     }
 }
 
