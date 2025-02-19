@@ -78,7 +78,7 @@ int bwrite(unsigned int nbloque, const void *buf)
  * Lee un bloque en el dispositivo virtual
  *
  * @param nbloque Especifica el bloque físico
- * @param buf Buffer que se volcará en la posición indicada con nbloque
+ * @param buf Buffer que obtendrá los datos de la posición indicada con nbloque
  * @return El numero de bytes leídos (debería ser BLOCKSIZE) o FALLO si ha habido error
  */
 int bread(unsigned int nbloque, void *buf)

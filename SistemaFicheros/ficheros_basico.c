@@ -5,8 +5,6 @@
 
 #include "ficheros_basico.h"
 
-struct superbloque SB; // Declaración de la variable global SB
-
 /**
  * Función para calcular el tamaño en bloques necesario para el mapa de bits.
  *
@@ -55,6 +53,8 @@ int tamAI(unsigned int ninodos)
  */
 int initSB(unsigned int nbloques, unsigned int ninodos)
 {
+    struct superbloque SB;
+
     SB.posPrimerBloqueMB = posSB + tamSB; // posSB = 0, tamSB = 1
     SB.posUltimoBloqueMB = SB.posPrimerBloqueMB + tamMB(nbloques) - 1;
     SB.posPrimerBloqueAI = SB.posUltimoBloqueMB + 1;
@@ -67,8 +67,9 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
     SB.cantInodosLibres = ninodos;
     SB.totBloques = nbloques;
     SB.totInodos = ninodos;
-    
-    // if(bwrite(posSB) == FALLO) return FALLO;
+
+    if (bwrite(posSB, &SB) == FALLO)
+        return FALLO;
     return EXITO;
 }
 
@@ -79,6 +80,54 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
  */
 int initMB()
 {
+    struct superbloque SB;
+    // Leemos el superbloque
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+
+    // Número de bloques que ocupan los metadatos
+    int metadatos = tamSB + tamMB(SB.totBloques) + tamAI(SB.totInodos);
+
+    // Inicializamos bufferMB
+    unsigned char bufferMB[BLOCKSIZE];
+    memset(bufferMB, 255, BLOCKSIZE);
+
+    // Miramos la cantidad de bloques que ocupan los bits de los metadatos
+    int bloquesMeta = tamMB(metadatos);
+
+    // Si hay más de un bloque, rellenamos los bits de todos los bloques a 1 menos el último
+    for (int i = 0; i < bloquesMeta - 1; i++)
+    {
+        if (bwrite(SB.posPrimerBloqueMB + i, bufferMB) == FALLO)
+            return FALLO;
+    }
+
+    memset(bufferMB, 0, BLOCKSIZE);
+
+    // Ponemos los bits necesarios del último bloque a 1
+    int numBits1 = metadatos / BYTE;
+    for (int i = 0; i < numBits1; i++)
+    {
+        bufferMB[i] = 255;
+    }
+
+    // Si la división no es exacta, añadimos los bits que falten
+    char resto = 0;
+    for (int i = metadatos % BYTE; i > 0; i--)
+    {
+        resto += (1 << (8 - i));
+    }
+
+    bufferMB[numBits1] = resto;
+
+    if (bwrite(SB.posPrimerBloqueMB + bloquesMeta - 1, bufferMB) == FALLO)
+        return FALLO;
+
+    // Reducimos la cantidad de bloques libres
+    SB.cantBloquesLibres -= bloquesMeta;
+    if (bwrite(posSB, &SB) == FALLO)
+        return FALLO;
+
     return EXITO;
 }
 
