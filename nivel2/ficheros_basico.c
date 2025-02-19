@@ -75,8 +75,6 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
  */
 int initMB()
 {
-
-    return 0;
 }
 
 /**
@@ -86,6 +84,4 @@ int initMB()
  */
 int initAI()
 {
-
-    return 0;
 }
