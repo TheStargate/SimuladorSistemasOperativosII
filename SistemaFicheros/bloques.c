@@ -17,7 +17,7 @@ int bmount(const char *camino)
 {
 
     umask(000); // Permisos rw para todos los usuarios
-    
+
     descriptor = open(camino, O_RDWR | O_CREAT, 0666);
     if (descriptor == -1)
     {
@@ -50,7 +50,7 @@ int bumount()
  *
  * @param nbloque Especifica el bloque físico
  * @param buf Buffer que se volcará en la posición indicada con nbloque
- * @return El numbero de bytes escritos (debería ser BLOCKSIZE) o FALLO si ha habido error
+ * @return El numero de bytes escritos (debería ser BLOCKSIZE) o FALLO si ha habido error
  */
 int bwrite(unsigned int nbloque, const void *buf)
 {
@@ -79,7 +79,7 @@ int bwrite(unsigned int nbloque, const void *buf)
  *
  * @param nbloque Especifica el bloque físico
  * @param buf Buffer que se volcará en la posición indicada con nbloque
- * @return El numbero de bytes leídos (debería ser BLOCKSIZE) o FALLO si ha habido error
+ * @return El numero de bytes leídos (debería ser BLOCKSIZE) o FALLO si ha habido error
  */
 int bread(unsigned int nbloque, void *buf)
 {

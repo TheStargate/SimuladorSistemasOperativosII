@@ -1,5 +1,6 @@
-#include "bloques.h"
 #include "ficheros_basico.h"
+
+// Programa que se encarga de inicializar el sistema de archivos
 
 int main(int argc, char **argv)
 {
@@ -14,4 +15,9 @@ int main(int argc, char **argv)
         bwrite(i, array);
     }
     bumount();
+
+    // PROVISIONAL
+    int ninodos = nbloques/4;
+    initSB(nbloques, ninodos);
+
 }

@@ -1,6 +1,6 @@
 /*
  * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
- * Descripción: Implementación de funciones para gestionar los bloques de un sistema de ficheros
+ * Descripción: Implementación de funciones para gestionar un sistema de ficheros
  */
 
 #include "ficheros_basico.h"
@@ -16,13 +16,13 @@ struct superbloque SB; // Declaración de la variable global SB
 int tamMB(unsigned int nbloques)
 {
 
-    if (nbloques % BYTE == 0)
+    if (nbloques % BYTE == 0 && nbloques / BYTE % BLOCKSIZE == 0)
     {
-        return nbloques / BYTE;
+        return nbloques / BYTE / BLOCKSIZE;
     }
     else
     {
-        return nbloques / BYTE + 1;
+        return nbloques / BYTE / BLOCKSIZE + 1;
     }
 }
 
@@ -43,11 +43,12 @@ int tamAI(unsigned int ninodos)
     {
         return ninodos / (BLOCKSIZE / INODOSIZE) + 1;
     }
-    return tamAI;
 }
 
 /**
  * Función para inicializar los datos del superbloque.
+ *
+ * Llama a: tamMB(), tamAI() y bwrite()
  *
  * @param nbloques Número de bloques del dispositivo virtual.
  * @return EXITO si todo ha ido bien, FALLO si ha habido algún error.
@@ -66,6 +67,9 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
     SB.cantInodosLibres = ninodos;
     SB.totBloques = nbloques;
     SB.totInodos = ninodos;
+    
+    // if(bwrite(posSB) == FALLO) return FALLO;
+    return EXITO;
 }
 
 /**
@@ -75,6 +79,7 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
  */
 int initMB()
 {
+    return EXITO;
 }
 
 /**
@@ -84,4 +89,5 @@ int initMB()
  */
 int initAI()
 {
+    return EXITO;
 }
