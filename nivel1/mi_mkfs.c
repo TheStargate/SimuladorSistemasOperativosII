@@ -2,7 +2,6 @@
 
 int main(int argc, char **argv)
 {
-
     int nbloques;
 
     bmount(argv[1]);
