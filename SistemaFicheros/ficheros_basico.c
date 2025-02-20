@@ -115,7 +115,7 @@ int initMB()
     char resto = 0;
     for (int i = metadatos % BYTE; i > 0; i--)
     {
-        resto += (1 << (8 - i));
+        resto += (1 << (BYTE - i));
     }
 
     bufferMB[numBits1] = resto;
@@ -138,5 +138,10 @@ int initMB()
  */
 int initAI()
 {
+    //8 inodos (BLOCKSIZE / INODOSIZE) para cada bloque de AI
+    //struct inodo inodos(BLOCKSIZE / INODOSIZE)
+    //inicialmente, cada inodo apunta al siguiente (el 0 al 1, el 1 al 2, el 2 al 3... hasta 24999)
+    //bread (i, inodos). bwrite (i, inodos)
+
     return EXITO;
 }

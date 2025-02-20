@@ -1,6 +1,7 @@
 // Librería que contiene constantes y funciones para el manejo de ficheros basicos
 
 #include <time.h>
+#include <limits.h>
 #include "bloques.h"
 
 #define posSB 0 // el superbloque se escribe en el primer bloque de nuestro FS
