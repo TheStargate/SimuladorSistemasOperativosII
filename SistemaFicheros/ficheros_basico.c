@@ -138,10 +138,45 @@ int initMB()
  */
 int initAI()
 {
-    //8 inodos (BLOCKSIZE / INODOSIZE) para cada bloque de AI
-    //struct inodo inodos(BLOCKSIZE / INODOSIZE)
-    //inicialmente, cada inodo apunta al siguiente (el 0 al 1, el 1 al 2, el 2 al 3... hasta 24999)
-    //bread (i, inodos). bwrite (i, inodos)
+    // 8 inodos (BLOCKSIZE / INODOSIZE) para cada bloque de AI
+    // struct inodo inodos(BLOCKSIZE / INODOSIZE)
+    // inicialmente, cada inodo apunta al siguiente (el 0 al 1, el 1 al 2, el 2 al 3... hasta 24999)
+    // bread (i, inodos). bwrite (i, inodos)
+
+    struct inodo inodos[BLOCKSIZE / INODOSIZE];
+    struct superbloque SB;
+
+    // Leer el superbloque
+
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+
+    int contInodos = SB.posPrimerInodoLibre + 1; // Inicializado posPrimerInodoLibre = 0.
+
+    // Iterar sobre los bloques del array de inodos
+    for (int i = SB.posPrimerBloqueAI; i <= SB.posUltimoBloqueAI; i++)
+    {
+        // Leer el bloque de inodos desde el dispositio virtual
+        if (bread(i, inodos) == FALLO)
+            return FALLO;
+        // Iterar sobre los inodos dentro del bloque
+        for (int j = 0; j < BLOCKSIZE / INODOSIZE; j++)
+        {
+            inodos[j].tipo = 'l'; //Libre
+            if (contInodos < SB.totInodos)
+            {
+                inodos[j].punterosDirectos[0] = contInodos; //Enlazar con el siguiente
+                contInodos++;
+            }
+            else
+            { // hemos llegado al último nodo.
+                inodos[j].punterosDirectos[0] = UINT_MAX;
+                break; // Úlitmo bloque no tiene porque estar completo.
+            }
+        }  //Escribir el bloque de inodos actualizado en el dispositivo
+        if (bwrite(i, inodos) == FALLO)
+            return FALLO;
+    }
 
     return EXITO;
 }
