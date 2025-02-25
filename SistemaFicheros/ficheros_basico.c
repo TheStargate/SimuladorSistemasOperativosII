@@ -162,10 +162,10 @@ int initAI()
         // Iterar sobre los inodos dentro del bloque
         for (int j = 0; j < BLOCKSIZE / INODOSIZE; j++)
         {
-            inodos[j].tipo = 'l'; //Libre
+            inodos[j].tipo = 'l'; // Libre
             if (contInodos < SB.totInodos)
             {
-                inodos[j].punterosDirectos[0] = contInodos; //Enlazar con el siguiente
+                inodos[j].punterosDirectos[0] = contInodos; // Enlazar con el siguiente
                 contInodos++;
             }
             else
@@ -173,10 +173,68 @@ int initAI()
                 inodos[j].punterosDirectos[0] = UINT_MAX;
                 break; // Úlitmo bloque no tiene porque estar completo.
             }
-        }  //Escribir el bloque de inodos actualizado en el dispositivo
+        } // Escribir el bloque de inodos actualizado en el dispositivo
         if (bwrite(i, inodos) == FALLO)
             return FALLO;
     }
 
     return EXITO;
 }
+
+/**
+ * Escribe en el bloque indicado por MB seleccionado un bit para indicar si está ocupado (1) o libre (0)
+ *
+ * @param nbloque Posición de MB que queremos modificar
+ * @param bit Valor que se le asignará al bit correspondiente (1 o 0)
+ * @return EXITO si todo ha ido bien, FALLO si ha habido algún error.
+ */
+int escribir_bit(unsigned int nbloque, unsigned int bit)
+{
+    struct superbloque SB;
+    // Leemos el superbloque
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+
+    // Calculamos donde se ecuentra el bit correspondiente a nbloque en MB
+    int posbyte = nbloque / BYTE;
+    int posbit = nbloque % BYTE;
+
+    // Miramos donde se encuentra el bit a nivel absoluto
+    int nbloqueMB = posbyte / BLOCKSIZE;
+    int nbloqueabs = SB.posPrimerBloqueMB + nbloqueMB;
+
+    // Inicializamos bufferMB
+    unsigned char bufferMB[BLOCKSIZE];
+
+    // Leemos el bloque físico que contiene el bit que queremos modificar
+    if (bread(nbloqueabs, bufferMB) == FALLO)
+        return FALLO;
+
+    // Obtenemos el byte que contiene el bit a modificar
+    posbyte = posbyte % BLOCKSIZE;
+
+    // Modificamos el bit
+    unsigned char mascara = 128; // 10000000
+    mascara >>= posbit;          // desplazamiento de bits a la derecha
+    if (bit == 1)
+    {
+        bufferMB[posbyte] |= mascara; // OR
+    }
+    else
+    {
+        bufferMB[posbyte] &= ~mascara; // AND y NOT
+    }
+
+    // Escribimos el bloque físico con el lbit modificado
+    if (bwrite(nbloqueabs, bufferMB) == FALLO)
+        return FALLO;
+
+    return EXITO;
+};
+
+char leer_bit(unsigned int nbloque);
+int reservar_bloque();
+int liberar_bloque(unsigned int nbloque);
+int escribir_inodo(unsigned int ninodo, struct inodo *inodo);
+int leer_inodo(unsigned int ninodo, struct inodo *inodo);
+int reservar_inodo(unsigned char tipo, unsigned char permisos);
