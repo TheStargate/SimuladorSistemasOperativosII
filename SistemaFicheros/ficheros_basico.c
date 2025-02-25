@@ -191,7 +191,7 @@ int initAI()
 int escribir_bit(unsigned int nbloque, unsigned int bit)
 {
     struct superbloque SB;
-    
+
     // Leemos el superbloque
     if (bread(posSB, &SB) == FALLO)
         return FALLO;
@@ -241,6 +241,36 @@ int escribir_bit(unsigned int nbloque, unsigned int bit)
  */
 char leer_bit(unsigned int nbloque)
 {
+    struct superbloque SB;
+
+    // Leemos el superbloque
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+
+    // Calculamos donde se ecuentra el bit correspondiente a nbloque en MB
+    int posbyte = nbloque / BYTE;
+    int posbit = nbloque % BYTE;
+
+    // Miramos donde se encuentra el bit a nivel absoluto
+    int nbloqueMB = posbyte / BLOCKSIZE;
+    int nbloqueabs = SB.posPrimerBloqueMB + nbloqueMB;
+
+    // Inicializamos bufferMB
+    unsigned char bufferMB[BLOCKSIZE];
+
+    // Leemos el bloque físico que contiene el bit que queremos modificar
+    if (bread(nbloqueabs, bufferMB) == FALLO)
+        return FALLO;
+
+    // Obtenemos el byte que contiene el bit a leer
+    posbyte = posbyte % BLOCKSIZE;
+
+    unsigned char mascara = 128; // 10000000
+    mascara >>= posbit;          // desplazamiento de bits a la derecha, los que indique posbit
+    mascara &= bufferMB[posbyte]; // operador AND para bits
+    mascara >>= (7 - posbit);     // desplazamiento de bits a la derecha 
+                                 // para dejar el 0 o 1 en el extremo derecho y leerlo en decimal
+    return mascara;
 }
 
 /**
