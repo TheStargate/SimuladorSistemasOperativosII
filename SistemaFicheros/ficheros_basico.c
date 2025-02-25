@@ -191,6 +191,7 @@ int initAI()
 int escribir_bit(unsigned int nbloque, unsigned int bit)
 {
     struct superbloque SB;
+    
     // Leemos el superbloque
     if (bread(posSB, &SB) == FALLO)
         return FALLO;
@@ -232,9 +233,66 @@ int escribir_bit(unsigned int nbloque, unsigned int bit)
     return EXITO;
 };
 
-char leer_bit(unsigned int nbloque);
-int reservar_bloque();
-int liberar_bloque(unsigned int nbloque);
-int escribir_inodo(unsigned int ninodo, struct inodo *inodo);
-int leer_inodo(unsigned int ninodo, struct inodo *inodo);
-int reservar_inodo(unsigned char tipo, unsigned char permisos);
+/**
+ * Lee un determinado bit del MB y devuelve el valor del bit leído.
+ *
+ * @param nbloque Posición de MB que queremos leer
+ * @return Valor del bit correspondiente (1 o 0)
+ */
+char leer_bit(unsigned int nbloque)
+{
+}
+
+/**
+ * Encuentra el primer bloque libre, consultando el MB (primer bit a 0), lo ocupa (poniendo el correspondiente bit a 1 con la ayuda de la función escribir_bit()) y devuelve su posición.
+ *
+ * @param nbloque Posición de MB que queremos leer
+ * @return Valor del bit correspondiente (1 o 0)
+ */
+int reservar_bloque()
+{
+}
+
+/**
+ * Libera un bloque determinado (con la ayuda de la función escribir_bit()).
+ *
+ * @param ninodo Número de inodo que queremos escribir
+ * @param inodo Puntero a la estructura inodo que queremos escribir
+ * @return EXITO si todo ha ido bien, FALLO si ha habido algún error.
+ */
+int liberar_bloque(unsigned int nbloque)
+{
+}
+
+/**
+ * Escribe el contenido de una variable de tipo struct inodo, pasada por referencia, en un determinado inodo del array de inodos, inodos.
+ *
+ * @param ninodo Número de inodo que queremos leer
+ * @param inodo Puntero a la estructura inodo donde queremos volcar el inodo leído
+ * @return EXITO si todo ha ido bien, FALLO si ha habido algún error.
+ */
+int escribir_inodo(unsigned int ninodo, struct inodo *inodo)
+{
+}
+
+/**
+ * Lee un determinado inodo del array de inodos para volcarlo en una variable de tipo struct inodo pasada por referencia.
+ *
+ * @param ninodo Número de inodo que queremos leer
+ * @param inodo Puntero a la estructura inodo donde queremos volcar el inodo leído
+ * @return EXITO si todo ha ido bien, FALLO si ha habido algún error.
+ */
+int leer_inodo(unsigned int ninodo, struct inodo *inodo)
+{
+}
+
+/**
+ * Encuentra el primer inodo libre (dato almacenado en el superbloque), lo reserva (con la ayuda de la función escribir_inodo()), devuelve su número y actualiza la lista enlazada de inodos libres.
+ *
+ * @param tipo Tipo de inodo que queremos reservar
+ * @param permisos Permisos del inodo que queremos reservar
+ * @return Número de inodo reservado
+ */
+int reservar_inodo(unsigned char tipo, unsigned char permisos)
+{
+}
