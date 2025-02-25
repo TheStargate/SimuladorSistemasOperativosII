@@ -225,7 +225,7 @@ int escribir_bit(unsigned int nbloque, unsigned int bit)
         bufferMB[posbyte] &= ~mascara; // AND y NOT
     }
 
-    // Escribimos el bloque físico con el lbit modificado
+    // Escribimos el bloque físico con el bit modificado
     if (bwrite(nbloqueabs, bufferMB) == FALLO)
         return FALLO;
 
