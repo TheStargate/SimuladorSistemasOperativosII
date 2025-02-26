@@ -124,7 +124,8 @@ int initMB()
         return FALLO;
 
     // Reducimos la cantidad de bloques libres
-    SB.cantBloquesLibres -= bloquesMeta;
+    SB.cantBloquesLibres -= metadatos;
+
     if (bwrite(posSB, &SB) == FALLO)
         return FALLO;
 
@@ -138,16 +139,10 @@ int initMB()
  */
 int initAI()
 {
-    // 8 inodos (BLOCKSIZE / INODOSIZE) para cada bloque de AI
-    // struct inodo inodos(BLOCKSIZE / INODOSIZE)
-    // inicialmente, cada inodo apunta al siguiente (el 0 al 1, el 1 al 2, el 2 al 3... hasta 24999)
-    // bread (i, inodos). bwrite (i, inodos)
-
     struct inodo inodos[BLOCKSIZE / INODOSIZE];
     struct superbloque SB;
 
     // Leer el superbloque
-
     if (bread(posSB, &SB) == FALLO)
         return FALLO;
 
@@ -177,6 +172,9 @@ int initAI()
         if (bwrite(i, inodos) == FALLO)
             return FALLO;
     }
+
+    if (bwrite(posSB, &SB) == FALLO)
+        return FALLO;
 
     return EXITO;
 }
@@ -265,11 +263,11 @@ char leer_bit(unsigned int nbloque)
     // Obtenemos el byte que contiene el bit a leer
     posbyte = posbyte % BLOCKSIZE;
 
-    unsigned char mascara = 128; // 10000000
-    mascara >>= posbit;          // desplazamiento de bits a la derecha, los que indique posbit
+    unsigned char mascara = 128;  // 10000000
+    mascara >>= posbit;           // desplazamiento de bits a la derecha, los que indique posbit
     mascara &= bufferMB[posbyte]; // operador AND para bits
-    mascara >>= (7 - posbit);     // desplazamiento de bits a la derecha 
-                                 // para dejar el 0 o 1 en el extremo derecho y leerlo en decimal
+    mascara >>= (7 - posbit);     // desplazamiento de bits a la derecha
+                                  // para dejar el 0 o 1 en el extremo derecho y leerlo en decimal
     return mascara;
 }
 
@@ -281,6 +279,7 @@ char leer_bit(unsigned int nbloque)
  */
 int reservar_bloque()
 {
+    return 1;
 }
 
 /**
@@ -292,6 +291,7 @@ int reservar_bloque()
  */
 int liberar_bloque(unsigned int nbloque)
 {
+    return EXITO;
 }
 
 /**
@@ -303,6 +303,7 @@ int liberar_bloque(unsigned int nbloque)
  */
 int escribir_inodo(unsigned int ninodo, struct inodo *inodo)
 {
+    return EXITO;
 }
 
 /**
@@ -314,6 +315,7 @@ int escribir_inodo(unsigned int ninodo, struct inodo *inodo)
  */
 int leer_inodo(unsigned int ninodo, struct inodo *inodo)
 {
+    return EXITO;
 }
 
 /**
@@ -325,4 +327,5 @@ int leer_inodo(unsigned int ninodo, struct inodo *inodo)
  */
 int reservar_inodo(unsigned char tipo, unsigned char permisos)
 {
+    return 7;
 }
