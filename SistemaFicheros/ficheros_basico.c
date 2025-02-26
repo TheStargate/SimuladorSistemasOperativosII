@@ -105,7 +105,7 @@ int initMB()
     memset(bufferMB, 0, BLOCKSIZE);
 
     // Ponemos los bits necesarios del último bloque a 1
-    int numBits1 = metadatos / BYTE;
+    int numBits1 = metadatos / BYTE - (bloquesMeta - 1) * BLOCKSIZE;
     for (int i = 0; i < numBits1; i++)
     {
         bufferMB[i] = 255;
