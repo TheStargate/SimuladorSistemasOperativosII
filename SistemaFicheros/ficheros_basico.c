@@ -279,7 +279,53 @@ char leer_bit(unsigned int nbloque)
  */
 int reservar_bloque()
 {
-    return 1;
+    struct superbloque SB;
+    unsigned char bufferAux[BLOCKSIZE];
+    unsigned char bufferMB[BLOCKSIZE];
+    int nbloqueMB = 0;
+    int res = 0;
+    if (SB.cantBloquesLibres == 0)
+    { // Comprobamos la variable de superbloque para saber si quedan bloques libres.
+        return FALLO;
+    }
+
+    memset(bufferAux, 255, BLOCKSIZE); // Llenamos el buffer auxilar con bits a 1.
+
+    while (nbloqueMB < SB.posUltimoBloqueMB && res == 0)
+    { // Vamos iterando por todos los bloques.
+        if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == -1) {
+            return FALLO;
+        }
+        res = memcmp(bufferAux, bufferMB, BLOCKSIZE); // Si después de la comparación dentro de res queda un valor distinto de 0.
+        nbloqueMB++;                                  // significa que ha quedado algun bit libre, es decir con 0 y salimos del bucle teniendo dicho bloque en el bufferMB.
+    }
+
+    int posbyte = 0; // Vamos recorriendo todos los bytes del bloque y comparamos si el byte, es igual a 255 que significa que es todo 1.
+    while (bufferMB[posbyte] == 255 && posbyte < BLOCKSIZE)
+    { // Seguirá hasta que llegue al final del bloque.
+        posbyte++;
+    }
+
+    unsigned char mascara = 128; // 10000000
+    int posbit = 0;
+    while (bufferMB[posbyte] & mascara)
+    { // Operacion de AND entre máscara y valor de byte.
+        bufferMB[posbyte] <<= 1;
+        posbit++;
+    }
+    int nbloque = (nbloqueMB * BLOCKSIZE * 8) + (posbyte * 8) + posbit;
+    escribir_bit(nbloque, 1);
+    SB.cantBloquesLibres--; // Decrementamos cantidad de bloques libres.
+    if (bwrite(0, &SB) == -1) {
+        return FALLO; // Error al salvar el superbloque
+    }
+    unsigned char bufferCero[BLOCKSIZE];
+    memset(bufferCero, 0, BLOCKSIZE); // Llenamos de ceros
+    if (bwrite(nbloque + SB.posPrimerBloqueDatos, bufferCero) == -1)
+    {
+        return FALLO; // Error al limpiar el bloque de datos
+    }
+    return nbloque;
 }
 
 /**
