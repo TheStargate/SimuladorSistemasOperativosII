@@ -9,6 +9,10 @@
 
 #define INODOSIZE 128 // tamaño en bytes de un inodo
 #define BYTE 8        // tamaño en bits de un Byte
+#define NPUNTEROS (BLOCKSIZE / sizeof(unsigned int))   // 256 punteros por bloque
+#define INDIRECTOS0 (NPUNTEROS + DIRECTOS)    // 268
+#define INDIRECTOS1 (NPUNTEROS * NPUNTEROS + INDIRECTOS0)    // 65.804
+#define INDIRECTOS2 (NPUNTEROS * NPUNTEROS * NPUNTEROS + INDIRECTOS1) // 16.843.020
 
 struct superbloque
 {

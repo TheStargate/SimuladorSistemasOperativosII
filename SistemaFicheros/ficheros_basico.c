@@ -274,8 +274,7 @@ char leer_bit(unsigned int nbloque)
 /**
  * Encuentra el primer bloque libre, consultando el MB (primer bit a 0), lo ocupa (poniendo el correspondiente bit a 1 con la ayuda de la función escribir_bit()) y devuelve su posición.
  *
- * @param nbloque Posición de MB que queremos leer
- * @return Valor del bit correspondiente (1 o 0)
+ * @return Posición del bloque reservado
  */
 int reservar_bloque()
 {
@@ -293,7 +292,8 @@ int reservar_bloque()
 
     while (nbloqueMB < SB.posUltimoBloqueMB && res == 0)
     { // Vamos iterando por todos los bloques.
-        if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == -1) {
+        if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == -1)
+        {
             return FALLO;
         }
         res = memcmp(bufferAux, bufferMB, BLOCKSIZE); // Si después de la comparación dentro de res queda un valor distinto de 0.
@@ -316,7 +316,8 @@ int reservar_bloque()
     int nbloque = (nbloqueMB * BLOCKSIZE * 8) + (posbyte * 8) + posbit;
     escribir_bit(nbloque, 1);
     SB.cantBloquesLibres--; // Decrementamos cantidad de bloques libres.
-    if (bwrite(0, &SB) == -1) {
+    if (bwrite(0, &SB) == -1)
+    {
         return FALLO; // Error al salvar el superbloque
     }
     unsigned char bufferCero[BLOCKSIZE];
