@@ -366,6 +366,35 @@ int liberar_bloque(unsigned int nbloque)
  */
 int escribir_inodo(unsigned int ninodo, struct inodo *inodo)
 {
+    struct superbloque SB;
+    
+    // Leemos el superbloque para obtener la localización del array de inodos
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+    
+    // Obtenemos el nº de bloque del array de inodos que tiene el inodo solicitado
+    int nbloqueAI = ninodo / (BLOCKSIZE / INODOSIZE);
+    
+    // Calculamos la posición absoluta del bloque en el dispositivo
+    int nbloqueabs = SB.posPrimerBloqueAI + nbloqueAI;
+    
+    // Declaramos un buffer para leer el bloque
+    struct inodo inodos[BLOCKSIZE / INODOSIZE];
+    
+    // Leemos el bloque del disco
+    if (bread(nbloqueabs, inodos) == FALLO)
+        return FALLO;
+    
+    // Calculamos la posición relativa del inodo dentro del bloque
+    int posinodo = ninodo % (BLOCKSIZE / INODOSIZE);
+    
+    // Copiamos el inodo en la posición correspondiente
+    inodos[posinodo] = *inodo;
+    
+    // Escribimos el bloque modificado de vuelta al disco
+    if (bwrite(nbloqueabs, inodos) == FALLO)
+        return FALLO;
+    
     return EXITO;
 }
 
