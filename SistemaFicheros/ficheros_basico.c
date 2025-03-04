@@ -332,12 +332,29 @@ int reservar_bloque()
 /**
  * Libera un bloque determinado (con la ayuda de la función escribir_bit()).
  *
- * @param ninodo Número de inodo que queremos escribir
+ * @param nbloque Número de bloque que queremos liberar
  * @return EXITO si todo ha ido bien, FALLO si ha habido algún error.
  */
-int liberar_bloque(unsigned int nbloque)
+int liberar_bloque(unsigned int nbloque)    
 {
+    struct superbloque SB;
     
+    // Leer el superbloque
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+    
+    // Poner a 0 el bit correspondiente al bloque
+    if (escribir_bit(nbloque, 0) == FALLO)
+        return FALLO;
+    
+    // Incrementar la cantidad de bloques libres
+    SB.cantBloquesLibres++;
+    
+    // Escribir el superbloque actualizado
+    if (bwrite(posSB, &SB) == FALLO)
+        return FALLO;
+    
+    return EXITO;
 }
 
 /**
