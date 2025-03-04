@@ -333,12 +333,11 @@ int reservar_bloque()
  * Libera un bloque determinado (con la ayuda de la función escribir_bit()).
  *
  * @param ninodo Número de inodo que queremos escribir
- * @param inodo Puntero a la estructura inodo que queremos escribir
  * @return EXITO si todo ha ido bien, FALLO si ha habido algún error.
  */
 int liberar_bloque(unsigned int nbloque)
 {
-    return EXITO;
+    
 }
 
 /**
