@@ -283,6 +283,11 @@ int reservar_bloque()
     unsigned char bufferMB[BLOCKSIZE];
     int nbloqueMB = 0;
     int res = 0;
+
+    // Leemos el superbloque
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+
     if (SB.cantBloquesLibres == 0)
     { // Comprobamos la variable de superbloque para saber si quedan bloques libres.
         return FALLO;
@@ -292,7 +297,7 @@ int reservar_bloque()
 
     while (nbloqueMB < SB.posUltimoBloqueMB && res == 0)
     { // Vamos iterando por todos los bloques.
-        if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == -1)
+        if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == FALLO)
         {
             return FALLO;
         }
@@ -313,16 +318,16 @@ int reservar_bloque()
         bufferMB[posbyte] <<= 1;
         posbit++;
     }
-    int nbloque = (nbloqueMB * BLOCKSIZE * 8) + (posbyte * 8) + posbit;
+    int nbloque = (nbloqueMB * BLOCKSIZE * BYTE) + (posbyte * BYTE) + posbit;
     escribir_bit(nbloque, 1);
     SB.cantBloquesLibres--; // Decrementamos cantidad de bloques libres.
-    if (bwrite(0, &SB) == -1)
+    if (bwrite(0, &SB) == FALLO)
     {
         return FALLO; // Error al salvar el superbloque
     }
     unsigned char bufferCero[BLOCKSIZE];
     memset(bufferCero, 0, BLOCKSIZE); // Llenamos de ceros
-    if (bwrite(nbloque + SB.posPrimerBloqueDatos, bufferCero) == -1)
+    if (bwrite(nbloque + SB.posPrimerBloqueDatos, bufferCero) == FALLO)
     {
         return FALLO; // Error al limpiar el bloque de datos
     }
@@ -335,25 +340,25 @@ int reservar_bloque()
  * @param nbloque Número de bloque que queremos liberar
  * @return EXITO si todo ha ido bien, FALLO si ha habido algún error.
  */
-int liberar_bloque(unsigned int nbloque)    
+int liberar_bloque(unsigned int nbloque)
 {
     struct superbloque SB;
-    
+
     // Leer el superbloque
     if (bread(posSB, &SB) == FALLO)
         return FALLO;
-    
+
     // Poner a 0 el bit correspondiente al bloque
     if (escribir_bit(nbloque, 0) == FALLO)
         return FALLO;
-    
+
     // Incrementar la cantidad de bloques libres
     SB.cantBloquesLibres++;
-    
+
     // Escribir el superbloque actualizado
     if (bwrite(posSB, &SB) == FALLO)
         return FALLO;
-    
+
     return EXITO;
 }
 
@@ -367,34 +372,34 @@ int liberar_bloque(unsigned int nbloque)
 int escribir_inodo(unsigned int ninodo, struct inodo *inodo)
 {
     struct superbloque SB;
-    
+
     // Leemos el superbloque para obtener la localización del array de inodos
     if (bread(posSB, &SB) == FALLO)
         return FALLO;
-    
+
     // Obtenemos el nº de bloque del array de inodos que tiene el inodo solicitado
     int nbloqueAI = ninodo / (BLOCKSIZE / INODOSIZE);
-    
+
     // Calculamos la posición absoluta del bloque en el dispositivo
     int nbloqueabs = SB.posPrimerBloqueAI + nbloqueAI;
-    
+
     // Declaramos un buffer para leer el bloque
     struct inodo inodos[BLOCKSIZE / INODOSIZE];
-    
+
     // Leemos el bloque del disco
     if (bread(nbloqueabs, inodos) == FALLO)
         return FALLO;
-    
+
     // Calculamos la posición relativa del inodo dentro del bloque
     int posinodo = ninodo % (BLOCKSIZE / INODOSIZE);
-    
+
     // Copiamos el inodo en la posición correspondiente
     inodos[posinodo] = *inodo;
-    
+
     // Escribimos el bloque modificado de vuelta al disco
     if (bwrite(nbloqueabs, inodos) == FALLO)
         return FALLO;
-    
+
     return EXITO;
 }
 
@@ -407,6 +412,31 @@ int escribir_inodo(unsigned int ninodo, struct inodo *inodo)
  */
 int leer_inodo(unsigned int ninodo, struct inodo *inodo)
 {
+    struct superbloque SB;
+
+    // Leemos el superbloque para obtener la localización del array de inodos
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+
+    // Obtenemos el nº de bloque del array de inodos que tiene el inodo solicitado
+    int nbloqueAI = ninodo / (BLOCKSIZE / INODOSIZE);
+
+    // Calculamos la posición absoluta del bloque en el dispositivo
+    int nbloqueabs = SB.posPrimerBloqueAI + nbloqueAI;
+
+    // Declaramos un buffer para leer el bloque
+    struct inodo inodos[BLOCKSIZE / INODOSIZE];
+
+    // Leemos el bloque del disco
+    if (bread(nbloqueabs, inodos) == FALLO)
+        return FALLO;
+
+    // Calculamos la posición relativa del inodo dentro del bloque
+    int posinodo = ninodo % (BLOCKSIZE / INODOSIZE);
+
+    // Volcamos el inodo correspondiente
+    *inodo = inodos[posinodo];
+
     return EXITO;
 }
 
