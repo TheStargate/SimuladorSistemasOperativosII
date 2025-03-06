@@ -9,9 +9,10 @@
 
 #define INODOSIZE 128 // tamaño en bytes de un inodo
 #define BYTE 8        // tamaño en bits de un Byte
-#define NPUNTEROS (BLOCKSIZE / sizeof(unsigned int))   // 256 punteros por bloque
-#define INDIRECTOS0 (NPUNTEROS + DIRECTOS)    // 268
-#define INDIRECTOS1 (NPUNTEROS * NPUNTEROS + INDIRECTOS0)    // 65.804
+#define NPUNTEROS (BLOCKSIZE / sizeof(unsigned int)) // 256 punteros por bloque
+#define DIRECTOS 12
+#define INDIRECTOS0 (NPUNTEROS + DIRECTOS) // 268
+#define INDIRECTOS1 (NPUNTEROS * NPUNTEROS + INDIRECTOS0) // 65.804
 #define INDIRECTOS2 (NPUNTEROS * NPUNTEROS * NPUNTEROS + INDIRECTOS1) // 16.843.020
 
 struct superbloque
@@ -69,3 +70,7 @@ int liberar_bloque(unsigned int nbloque);
 int escribir_inodo(unsigned int ninodo, struct inodo *inodo);
 int leer_inodo(unsigned int ninodo, struct inodo *inodo);
 int reservar_inodo(unsigned char tipo, unsigned char permisos);
+
+int traducir_bloque_inodo(unsigned int inodo, unsigned int nblogico, unsigned char reservar);
+int obtener_indice(unsigned int nblogico, int nivel_punteros);
+int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *ent);

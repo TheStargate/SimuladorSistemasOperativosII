@@ -451,3 +451,178 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
 {
     return 7;
 }
+
+/**
+ * Esta función se encarga de obtener el nº de bloque físico correspondiente a un bloque lógico determinado del inodo indicado.
+ * Enmascara la gestión de los diferentes rangos de punteros directos e indirectos del inodo, de manera que funciones externas
+ * no tienen que preocuparse de cómo acceder a los bloques físicos apuntados desde el inodo.
+ *
+ * @param inodo Número de inodo que queremos leer
+ * @param nblogico Número de bloque lógico que queremos traducir
+ * @param reservar Indica si se debe reservar el bloque en caso de que no exista
+ * @return Número de bloque físico correspondiente al bloque lógico indicado
+ */
+int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned char reservar)
+{
+    unsigned int ptr = 0, ptr_ant = 0, salvar_inodo = 0, indice = 0; 
+    int nRangoBL, nivel_punteros_indice;
+    unsigned int buffer[NPUNTEROS];
+    struct inodo inodo;
+
+    leer_inodo(ninodo, &inodo);
+    nRangoBL = obtener_nRangoBL(&inodo, nblogico, &ptr); // 0:D, 1:I0, 2:I1, 3:I2
+    int nivel_punteros = nRangoBL;  // El nivel_punteros más alto es el que cuelga directamente del inodo
+
+    while (nivel_punteros > 0) // Iterar para cada nivel de punteros indirectos
+    {
+        if (ptr == 0) // No cuelgan bloques de punteros
+        {
+            if (reservar == 0) // Bloque inexistente
+                return FALLO;
+            //reservar bloques de punteros y crear enlaces desde el  inodo hasta el bloque de datos 
+            ptr = reservar_bloque(); // de punteros
+            inodo.numBloquesOcupados++;
+            inodo.ctime = time(NULL); // Fecha actual
+            salvar_inodo = 1;
+            if (nivel_punteros == nRangoBL)
+            { // El bloque cuelga directamente del inodo
+                inodo.punterosIndirectos[nRangoBL - 1] = ptr;
+            }
+            else
+            { // El bloque cuelga de otro bloque de punteros
+                buffer[indice] = ptr;
+                if (bwrite(ptr_ant, buffer) == FALLO)
+                { // Salvamos en el dispositivo el buffer de punteros modificado
+                    return FALLO;
+                }
+            }
+            memset(buffer, 0, BLOCKSIZE); // Ponemos a 0 todos los punteros del buffer
+        }
+        else
+        {
+            bread(ptr, buffer); // Leemos del dispositivo el bloque de punteros ya existente
+        }
+        indice = obtener_indice(nblogico, nivel_punteros);
+        ptr_ant = ptr;        // Guardamos el puntero actual
+        ptr = buffer[indice]; // Lo desplazamos al siguiente nivel
+        nivel_punteros--;
+
+    } // Al salir de este bucle ya estamos al nivel de datos
+    if (ptr == 0)
+    { // No existe bloque de datos
+        if (reservar == 0) // Error lectura ∄ bloque
+        {
+            return FALLO;
+        }
+        ptr = reservar_bloque(); // De datos
+        inodo.numBloquesOcupados++;
+        inodo.ctime = time(NULL);
+        salvar_inodo = 1;
+        if (nRangoBL == 0)
+        {                                           // Si era puntero directo
+            inodo.punterosDirectos[nblogico] = ptr; // Asignamos la dirección del  bl. de datos en el inodo
+        }
+        else
+        {
+            buffer[indice] = ptr;    // Asignamos la dirección del bloque de datos en el buffer
+            bwrite(ptr_ant, buffer); // Salvamos en el dispositivo el buffer de punteros modificado
+        }
+    }
+
+    return ptr;
+}
+
+/**
+ * Generaliza la obtención de los índices de los bloques de punteros.
+ *
+ * @param nblogico Número de bloque lógico que queremos traducir
+ * @param nivel_punteros Nivel de punteros en el que nos encontramos
+ * @return Índice correspondiente al bloque de punteros
+ */
+int obtener_indice(unsigned int nblogico, int nivel_punteros)
+{
+    // Calculamos el ndice a partir del nivel de punteros en el que nos encontramos
+    if (nblogico < DIRECTOS) // <12
+    {
+        return nblogico;
+    }
+    else if (nblogico < INDIRECTOS0) // <268
+    {
+        return nblogico - DIRECTOS;
+    }
+    else if (nblogico < INDIRECTOS1) // <65.804
+    {
+        if (nivel_punteros = 2)
+        {
+            return (nblogico - INDIRECTOS0) / NPUNTEROS;
+        }
+        else if (nivel_punteros = 1)
+        {
+            return (nblogico - INDIRECTOS0) % NPUNTEROS;
+        }
+        else
+        {
+            return FALLO;
+        }
+    }
+    else if (nblogico < INDIRECTOS2) // <16.843.020
+    {
+        if (nivel_punteros = 3)
+        {
+            return (nblogico - INDIRECTOS1) / (NPUNTEROS * NPUNTEROS);
+        }
+
+        else if (nivel_punteros = 2)
+        {
+            return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) / NPUNTEROS;
+        }
+        else if (nivel_punteros = 1)
+        {
+            return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) % NPUNTEROS;
+        }
+        else
+        {
+            return FALLO;
+        }
+    }
+    printf(RED "Bloque lógico fuera de rango");
+    printf(RESET);
+    return FALLO;
+}
+
+/**
+ * Asocia un rango para cada conjunto de bloques lógicos.
+ *
+ * @param inodo Número de inodo que queremos leer
+ * @param nblogico Número de bloque lógico que queremos traducir
+ * @param ent Puntero a la dirección de memoria donde se almacenará el bloque físico correspondiente
+ * @return Número de rango asociado al bloque lógico indicado
+ */
+int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *ptr)
+{
+    if (nblogico < DIRECTOS) // <12
+    {
+        *ptr = inodo->punterosDirectos[nblogico];
+        return 0;
+    }
+    else if (nblogico < INDIRECTOS0) // <268
+    {
+        *ptr = inodo->punterosIndirectos[0];
+        return 1;
+    }
+    else if (nblogico < INDIRECTOS1) // <65.804
+    {
+        *ptr = inodo->punterosIndirectos[1];
+        return 2;
+    }
+    else if (nblogico < INDIRECTOS2) // <16.843.020
+    {
+        *ptr = inodo->punterosIndirectos[2];
+        return 3;
+    }
+
+    *ptr = 0;
+    printf(RED "Bloque lógico fuera de rango");
+    printf(RESET);
+    return FALLO;
+}
