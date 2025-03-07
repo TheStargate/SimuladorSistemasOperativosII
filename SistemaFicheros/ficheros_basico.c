@@ -62,7 +62,7 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
     SB.posPrimerBloqueDatos = SB.posUltimoBloqueAI + 1;
     SB.posUltimoBloqueDatos = nbloques - 1;
     SB.posInodoRaiz = 0;
-    SB.posPrimerInodoLibre = 0;
+    SB.posPrimerinodoNuevo = 0;
     SB.cantBloquesLibres = nbloques;
     SB.cantInodosLibres = ninodos;
     SB.totBloques = nbloques;
@@ -146,7 +146,7 @@ int initAI()
     if (bread(posSB, &SB) == FALLO)
         return FALLO;
 
-    int contInodos = SB.posPrimerInodoLibre + 1; // Inicializado posPrimerInodoLibre = 0.
+    int contInodos = SB.posPrimerinodoNuevo + 1; // Inicializado posPrimerinodoNuevo = 0.
 
     // Iterar sobre los bloques del array de inodos
     for (int i = SB.posPrimerBloqueAI; i <= SB.posUltimoBloqueAI; i++)
@@ -449,7 +449,34 @@ int leer_inodo(unsigned int ninodo, struct inodo *inodo)
  */
 int reservar_inodo(unsigned char tipo, unsigned char permisos)
 {
-    return 7;
+    struct superbloque SB;
+    if (SB.cantInodosLibres == 0)
+    { // Comprobamos si hay inodos libres, si no los hay devolvemos error.
+        return FALLO;
+    }
+    int posInodoReservado;
+    posInodoReservado = SB.posPrimerInodoLibre; // Guardamos en variable auxiliar la posición del primer inodo libre, es decir el que reservaremos.
+    struct inodo inodoNuevo;
+    leer_inodo(posInodoReservado, &inodoNuevo);              // Ahora volcamos el inodo reservado dentro de nuestra variable.
+    SB.posPrimerInodoLibre = inodoNuevo.punterosDirectos[0]; // El SB apunta al siguiente inodo, ya que cada inodo contiene la dirección del siguiente inodo en la lista enlazada.
+    inodoNuevo.tipo = tipo;
+    inodoNuevo.permisos = permisos;
+    inodoNuevo.nlinks = 1;
+    inodoNuevo.tamEnBytesLog = 0;
+    inodoNuevo.atime = time(NULL);
+    inodoNuevo.btime = time(NULL);
+    inodoNuevo.ctime = time(NULL);
+    inodoNuevo.mtime = time(NULL);
+    inodoNuevo.numBloquesOcupados = 0;
+
+    //Inicializamos todo con ceros.
+    memset(inodoNuevo.punterosDirectos, 0, sizeof(inodoNuevo.punterosDirectos));
+    memset(inodoNuevo.punterosIndirectos, 0, sizeof(inodoNuevo.punterosIndirectos));
+
+    escribir_inodo(posInodoReservado, &inodoNuevo);
+    SB.cantInodosLibres--;
+
+    return posInodoReservado;
 }
 
 /**
@@ -464,14 +491,14 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
  */
 int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned char reservar)
 {
-    unsigned int ptr = 0, ptr_ant = 0, salvar_inodo = 0, indice = 0; 
+    unsigned int ptr = 0, ptr_ant = 0, salvar_inodo = 0, indice = 0;
     int nRangoBL, nivel_punteros_indice;
     unsigned int buffer[NPUNTEROS];
     struct inodo inodo;
 
     leer_inodo(ninodo, &inodo);
     nRangoBL = obtener_nRangoBL(&inodo, nblogico, &ptr); // 0:D, 1:I0, 2:I1, 3:I2
-    int nivel_punteros = nRangoBL;  // El nivel_punteros más alto es el que cuelga directamente del inodo
+    int nivel_punteros = nRangoBL;                       // El nivel_punteros más alto es el que cuelga directamente del inodo
 
     while (nivel_punteros > 0) // Iterar para cada nivel de punteros indirectos
     {
@@ -479,7 +506,7 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
         {
             if (reservar == 0) // Bloque inexistente
                 return FALLO;
-            //reservar bloques de punteros y crear enlaces desde el  inodo hasta el bloque de datos 
+            // reservar bloques de punteros y crear enlaces desde el  inodo hasta el bloque de datos
             ptr = reservar_bloque(); // de punteros
             inodo.numBloquesOcupados++;
             inodo.ctime = time(NULL); // Fecha actual
@@ -509,7 +536,7 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
 
     } // Al salir de este bucle ya estamos al nivel de datos
     if (ptr == 0)
-    { // No existe bloque de datos
+    {                      // No existe bloque de datos
         if (reservar == 0) // Error lectura ∄ bloque
         {
             return FALLO;
