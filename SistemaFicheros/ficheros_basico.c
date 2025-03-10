@@ -469,7 +469,7 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     inodoNuevo.mtime = time(NULL);
     inodoNuevo.numBloquesOcupados = 0;
 
-    //Inicializamos todo con ceros.
+    // Inicializamos todo con ceros.
     memset(inodoNuevo.punterosDirectos, 0, sizeof(inodoNuevo.punterosDirectos));
     memset(inodoNuevo.punterosIndirectos, 0, sizeof(inodoNuevo.punterosIndirectos));
 
@@ -651,5 +651,61 @@ int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *p
     *ptr = 0;
     printf(RED "Bloque lógico fuera de rango");
     printf(RESET);
+    return FALLO;
+}
+
+/**
+ * Escribe el contenido procedente de un buffer de memoria, buf_original, de tamaño nbytes,
+ * en un fichero/directorio (correspondiente al inodo pasado como argumento, ninodo).
+ *
+ * @param ninodo Número de inodo que queremos leer
+ * @param buf_original Puntero al buffer de memoria que contiene los datos a escribir
+ * @param offset Desplazamiento en el fichero/directorio donde queremos escribir
+ * @param nbytes Número de bytes a escribir
+ * @return Número de bytes escritos realmente
+ */
+int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offset, unsigned int nbytes)
+{
+    return 7;
+}
+
+/**
+ * Lee información de un fichero/directorio (correspondiente al nº de inodo, ninodo, pasado
+ * como argumento) y la almacena en un buffer de memoria.
+ *
+ * @param ninodo Número de inodo que queremos leer
+ * @param buf_original Puntero al buffer de memoria donde queremos almacenar los datos leídos
+ * @param offset Desplazamiento en el fichero/directorio donde queremos leer
+ * @param nbytes Número de bytes a leer
+ * @return Número de bytes leídos realmente
+ */
+int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsigned int nbytes)
+{
+    return 7;
+}
+
+/**
+ * Devuelve la metainformación de un fichero/directorio (correspondiente al nº de inodo pasado
+ * como argumento).
+ *
+ * @param ninodo Número de inodo que queremos leer
+ * @param p_stat Puntero a la estructura STAT donde queremos volcar la información
+ * @return EXITO si todo ha ido bien, FALLO si ha habido algún error.
+ */
+int mi_stat_f(unsigned int ninodo, struct STAT *p_stat)
+{
+    return FALLO;
+}
+
+/**
+ * Cambia los permisos de un fichero/directorio (correspondiente al nº de inodo pasado como argumento, ninodo)
+ * con el valor que indique el argumento permisos.
+ *
+ * @param ninodo Número de inodo que queremos leer
+ * @param permisos Nuevos permisos que queremos asignar
+ * @return EXITO si todo ha ido bien, FALLO si ha habido algún error.
+ */
+int mi_chmod_f(unsigned int ninodo, unsigned char permisos)
+{
     return FALLO;
 }
