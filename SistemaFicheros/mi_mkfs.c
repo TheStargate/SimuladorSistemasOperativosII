@@ -23,5 +23,7 @@ int main(int argc, char **argv)
     initMB(nbloques, ninodos);
     initAI(nbloques, ninodos);
 
+    reservar_inodo('d',7);
+
     bumount();
 }

@@ -62,7 +62,7 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
     SB.posPrimerBloqueDatos = SB.posUltimoBloqueAI + 1;
     SB.posUltimoBloqueDatos = nbloques - 1;
     SB.posInodoRaiz = 0;
-    SB.posPrimerinodoNuevo = 0;
+    SB.posPrimerInodoLibre = 0;
     SB.cantBloquesLibres = nbloques;
     SB.cantInodosLibres = ninodos;
     SB.totBloques = nbloques;
@@ -146,7 +146,7 @@ int initAI()
     if (bread(posSB, &SB) == FALLO)
         return FALLO;
 
-    int contInodos = SB.posPrimerinodoNuevo + 1; // Inicializado posPrimerinodoNuevo = 0.
+    int contInodos = SB.posPrimerInodoLibre + 1; // Inicializado posPrimerinodoLibre = 0.
 
     // Iterar sobre los bloques del array de inodos
     for (int i = SB.posPrimerBloqueAI; i <= SB.posUltimoBloqueAI; i++)
@@ -450,8 +450,15 @@ int leer_inodo(unsigned int ninodo, struct inodo *inodo)
 int reservar_inodo(unsigned char tipo, unsigned char permisos)
 {
     struct superbloque SB;
+
+    // Leemos el superbloque para obtener la localización del array de inodos
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+
     if (SB.cantInodosLibres == 0)
     { // Comprobamos si hay inodos libres, si no los hay devolvemos error.
+        printf(RED "No hay inodos libres");
+        printf(RESET);
         return FALLO;
     }
     int posInodoReservado;
@@ -476,6 +483,10 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     escribir_inodo(posInodoReservado, &inodoNuevo);
     SB.cantInodosLibres--;
 
+    // Escribir el superbloque actualizado
+    if (bwrite(posSB, &SB) == FALLO)
+        return FALLO;
+
     return posInodoReservado;
 }
 
@@ -492,13 +503,13 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
 int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned char reservar)
 {
     unsigned int ptr = 0, ptr_ant = 0, salvar_inodo = 0, indice = 0;
-    int nRangoBL, nivel_punteros_indice;
+    int nRangoBL, nivel_punteros;
     unsigned int buffer[NPUNTEROS];
     struct inodo inodo;
 
     leer_inodo(ninodo, &inodo);
     nRangoBL = obtener_nRangoBL(&inodo, nblogico, &ptr); // 0:D, 1:I0, 2:I1, 3:I2
-    int nivel_punteros = nRangoBL;                       // El nivel_punteros más alto es el que cuelga directamente del inodo
+    nivel_punteros = nRangoBL;                       // El nivel_punteros más alto es el que cuelga directamente del inodo
 
     while (nivel_punteros > 0) // Iterar para cada nivel de punteros indirectos
     {
@@ -556,6 +567,10 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
         }
     }
 
+    if(salvar_inodo) {
+        escribir_inodo(ninodo, &inodo);
+    }
+
     return ptr;
 }
 
@@ -579,11 +594,11 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros)
     }
     else if (nblogico < INDIRECTOS1) // <65.804
     {
-        if (nivel_punteros = 2)
+        if (nivel_punteros == 2)
         {
             return (nblogico - INDIRECTOS0) / NPUNTEROS;
         }
-        else if (nivel_punteros = 1)
+        else if (nivel_punteros == 1)
         {
             return (nblogico - INDIRECTOS0) % NPUNTEROS;
         }
@@ -594,16 +609,16 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros)
     }
     else if (nblogico < INDIRECTOS2) // <16.843.020
     {
-        if (nivel_punteros = 3)
+        if (nivel_punteros == 3)
         {
             return (nblogico - INDIRECTOS1) / (NPUNTEROS * NPUNTEROS);
         }
 
-        else if (nivel_punteros = 2)
+        else if (nivel_punteros == 2)
         {
             return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) / NPUNTEROS;
         }
-        else if (nivel_punteros = 1)
+        else if (nivel_punteros == 1)
         {
             return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) % NPUNTEROS;
         }
