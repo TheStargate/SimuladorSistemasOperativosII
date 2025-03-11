@@ -261,13 +261,18 @@ char leer_bit(unsigned int nbloque)
         return FALLO;
 
     // Obtenemos el byte que contiene el bit a leer
-    posbyte = posbyte % BLOCKSIZE;
+    int posbyteAjustado = posbyte % BLOCKSIZE;
 
-    unsigned char mascara = 128;  // 10000000
-    mascara >>= posbit;           // desplazamiento de bits a la derecha, los que indique posbit
-    mascara &= bufferMB[posbyte]; // operador AND para bits
-    mascara >>= (7 - posbit);     // desplazamiento de bits a la derecha
-                                  // para dejar el 0 o 1 en el extremo derecho y leerlo en decimal
+    unsigned char mascara = 128;          // 10000000
+    mascara >>= posbit;                   // desplazamiento de bits a la derecha, los que indique posbit
+    mascara &= bufferMB[posbyteAjustado]; // operador AND para bits
+    mascara >>= (7 - posbit);             // desplazamiento de bits a la derecha
+    // para dejar el 0 o 1 en el extremo derecho y leerlo en decimal
+
+#if DEBUGN3
+    printf(GRAY "\n[leer_bit(%u)→ posbyte:%d, posbyte (ajustado): %d, posbit:%d, nbloqueMB:%d, nbloqueabs:%d)]" RESET, nbloque, posbyte, posbyteAjustado, posbit, nbloqueMB, nbloqueabs);
+#endif
+
     return mascara;
 }
 
@@ -302,7 +307,11 @@ int reservar_bloque()
             return FALLO;
         }
         res = memcmp(bufferAux, bufferMB, BLOCKSIZE); // Si después de la comparación dentro de res queda un valor distinto de 0.
-        nbloqueMB++;                                  // significa que ha quedado algun bit libre, es decir con 0 y salimos del bucle teniendo dicho bloque en el bufferMB.
+                                                      // significa que ha quedado algun bit libre, es decir con 0 y salimos del bucle teniendo dicho bloque en el bufferMB.
+        if (res == 0)
+        {
+            nbloqueMB++;
+        }
     }
 
     int posbyte = 0; // Vamos recorriendo todos los bytes del bloque y comparamos si el byte, es igual a 255 que significa que es todo 1.
@@ -318,19 +327,23 @@ int reservar_bloque()
         bufferMB[posbyte] <<= 1;
         posbit++;
     }
+
     int nbloque = (nbloqueMB * BLOCKSIZE * BYTE) + (posbyte * BYTE) + posbit;
     escribir_bit(nbloque, 1);
+
     SB.cantBloquesLibres--; // Decrementamos cantidad de bloques libres.
-    if (bwrite(0, &SB) == FALLO)
-    {
-        return FALLO; // Error al salvar el superbloque
-    }
+
     unsigned char bufferCero[BLOCKSIZE];
     memset(bufferCero, 0, BLOCKSIZE); // Llenamos de ceros
     if (bwrite(nbloque + SB.posPrimerBloqueDatos, bufferCero) == FALLO)
     {
         return FALLO; // Error al limpiar el bloque de datos
     }
+
+    // Escribir el superbloque actualizado
+    if (bwrite(posSB, &SB) == FALLO)
+        return FALLO;
+
     return nbloque;
 }
 
@@ -471,9 +484,9 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     inodoNuevo.nlinks = 1;
     inodoNuevo.tamEnBytesLog = 0;
     inodoNuevo.atime = time(NULL);
-    inodoNuevo.btime = time(NULL);
     inodoNuevo.ctime = time(NULL);
     inodoNuevo.mtime = time(NULL);
+    inodoNuevo.btime = time(NULL);
     inodoNuevo.numBloquesOcupados = 0;
 
     // Inicializamos todo con ceros.
@@ -509,7 +522,7 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
 
     leer_inodo(ninodo, &inodo);
     nRangoBL = obtener_nRangoBL(&inodo, nblogico, &ptr); // 0:D, 1:I0, 2:I1, 3:I2
-    nivel_punteros = nRangoBL;                       // El nivel_punteros más alto es el que cuelga directamente del inodo
+    nivel_punteros = nRangoBL;                           // El nivel_punteros más alto es el que cuelga directamente del inodo
 
     while (nivel_punteros > 0) // Iterar para cada nivel de punteros indirectos
     {
@@ -525,6 +538,9 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
             if (nivel_punteros == nRangoBL)
             { // El bloque cuelga directamente del inodo
                 inodo.punterosIndirectos[nRangoBL - 1] = ptr;
+#if DEBUGN4
+                printf(GRAY "\n[traducir_bloque_inodo()→ inodo.punterosIndirectos[%u] = %u (reservado BF %u para punteros_nivel%u)]" RESET, nRangoBL - 1, ptr, ptr, nivel_punteros);
+#endif
             }
             else
             { // El bloque cuelga de otro bloque de punteros
@@ -533,6 +549,9 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
                 { // Salvamos en el dispositivo el buffer de punteros modificado
                     return FALLO;
                 }
+#if DEBUGN4
+                printf(GRAY "\n[traducir_bloque_inodo()→ punteros_nivel%u [%u] = %u (reservado BF %u para punteros_nivel%u)]" RESET, nivel_punteros + 1, indice, ptr, ptr, nivel_punteros);
+#endif
             }
             memset(buffer, 0, BLOCKSIZE); // Ponemos a 0 todos los punteros del buffer
         }
@@ -558,16 +577,23 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
         salvar_inodo = 1;
         if (nRangoBL == 0)
         {                                           // Si era puntero directo
-            inodo.punterosDirectos[nblogico] = ptr; // Asignamos la dirección del  bl. de datos en el inodo
+            inodo.punterosDirectos[nblogico] = ptr; // Asignamos la dirección del  bloque de datos en el inodo
+#if DEBUGN4
+            printf(GRAY "\n[traducir_bloque_inodo()→ inodo.punterosDirectos[%u] = %u (reservado BF %u para BL %u)]" RESET, nblogico, ptr, ptr, nblogico);
+#endif
         }
         else
         {
             buffer[indice] = ptr;    // Asignamos la dirección del bloque de datos en el buffer
             bwrite(ptr_ant, buffer); // Salvamos en el dispositivo el buffer de punteros modificado
+#if DEBUGN4
+            printf(GRAY "\n[traducir_bloque_inodo()→ punteros_nivel%u [%u] = %u (reservado BF %u para BL %u)]" RESET, nivel_punteros + 1, indice, ptr, ptr, nblogico);
+#endif
         }
     }
 
-    if(salvar_inodo) {
+    if (salvar_inodo)
+    {
         escribir_inodo(ninodo, &inodo);
     }
 

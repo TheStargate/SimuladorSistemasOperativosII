@@ -4,6 +4,10 @@
 #include <limits.h>
 #include "bloques.h"
 
+#define DEBUGN2 0
+#define DEBUGN3 0
+#define DEBUGN4 1
+
 #define posSB 0 // el superbloque se escribe en el primer bloque de nuestro FS
 #define tamSB 1
 
