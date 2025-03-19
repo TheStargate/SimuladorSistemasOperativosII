@@ -13,21 +13,20 @@ int main(int argc, char **argv)
         return FALLO;
     }
 
-    int diferentes_inodos = argv[3];
+    int diferentes_inodos = atoi(argv[3]);
     int offset[] = {9000, 209000, 30725000, 409605000, 480000000};
     int ninodo[numOffsets];
-    int bytesEscritos, bytesLeidos;
     int tambuffer = strlen(argv[2]) * sizeof(char);
-    char buffer_texto = argv[2];
+    char *buffer_texto = argv[2];
     struct STAT stat[5];
 
     bmount(argv[1]);
 
-    printf("longitud texto: %d\n", strlen(argv[2]));
+    printf("longitud texto: %lu\n", strlen(argv[2]));
 
     if (diferentes_inodos == 0)
     { // Un inodo para todos los offset
-        int ninodo[0] = reservar_inodo('f', 6);
+        ninodo[0] = reservar_inodo('f', 6);
         for (int i = 1; i < numOffsets; i++)
         {
             ninodo[i] = ninodo[0];
@@ -46,17 +45,16 @@ int main(int argc, char **argv)
         printf("Nº inodo reservado: %d", ninodo[i]);
         printf("offset: %d", offset[i]);
         // Escribimos el fichero
-        bytesEscritos=mi_write_f(ninodo[i], buffer_texto, offset[i], tambuffer);
-        mi_stat_f(ninodo, &stat[i]);
+        int bytesEscritos = mi_write_f(ninodo[i], buffer_texto, offset[i], tambuffer);
+        mi_stat_f(ninodo[i], &stat[i]);
         printf("Bytes escritos: %d", bytesEscritos);
         printf("stat.tamEnBytesLog=%d", stat->tamEnBytesLog);
         printf("stat.numBloquesOcupados=%d", stat->numBloquesOcupados);
 
-
         // (ELIMINAR DESPUÉS DE TESTEAR)
         memset(buffer_texto, 0, tambuffer);
-        bytesLeidos=mi_read_f(ninodo, buffer_texto, offset[i], tambuffer);
-        write(stdout, buffer_texto, tambuffer);
+        int bytesLeidos = mi_read_f(ninodo[i], buffer_texto, offset[i], tambuffer);
+        write(1, buffer_texto, tambuffer);
     }
 
     bumount();
