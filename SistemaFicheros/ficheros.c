@@ -19,6 +19,8 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 {
     struct inodo inodo;
     unsigned char buf_bloque[BLOCKSIZE];
+    int nbfisico;
+    int bytes_escritos = 0;
 
     if ((inodo.permisos & 2) != 2)
     {
@@ -46,16 +48,50 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     }
     else
     {
-        int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 1);
-        if (bread(nbfisico, buf_bloque) == FALLO)
-            ;
-        return FALLO;
-        memcpy(buf_bloque + desp1, buf_original, nbytes);
-        if (bwrite(nbfisico, buf_bloque) == FALLO)
-            return FALLO;
+        // FASE 1
+       nbfisico = traducir_bloque_inodo(ninodo, primerBL, 1);
+       if (bread(nbfisico, buf_bloque) == FALLO)
+           return FALLO;
+       memcpy(buf_bloque + desp1, buf_original, nbytes);
+       if (bwrite(nbfisico, buf_bloque) == FALLO)
+           return FALLO;
+           bytes_escritos += BLOCKSIZE;
+       // FASE 2
+       for (int bl = primerBL + 1; bl < ultimoBL; bl++)
+       {
+           nbfisico = traducir_bloque_inodo(ninodo, bl, 1);
+           if (bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (bl - primerBL - 1) * BLOCKSIZE) == FALLO)
+               return FALLO;
+           bytes_escritos += BLOCKSIZE;
+       }
+       // FASE 3
+       nbfisico = traducir_bloque_inodo(ninodo, ultimoBL, 1);
+       if (bread(nbfisico, buf_bloque) == FALLO)
+           return FALLO;
+       memcpy(buf_bloque, buf_original + (nbytes - (desp2 + 1)), desp2 + 1);
+       if (bwrite(nbfisico, buf_bloque) == FALLO)
+           return FALLO;
+       bytes_escritos += BLOCKSIZE;
+       if (leer_inodo(ninodo, &inodo) == FALLO)
+           return FALLO;
+
+
+       // Actualizar el tamaño lógico del archivo si hemos escrito más allá del EOF
+       if ((offset + nbytes) > inodo.tamEnBytesLog)
+           inodo.tamEnBytesLog = offset + nbytes;
+
+
+       // Actualizar tiempos
+       inodo.mtime = time(NULL);
+       inodo.ctime = time(NULL);
+
+
+       // Guardar los cambios en el inodo
+       if (escribir_inodo(ninodo, &inodo) == FALLO)
+           return FALLO;
     }
 
-    return 7;
+    return bytes_escritos;
 }
 
 // Esto enteoria es un mi_write_f que funciona
