@@ -47,13 +47,12 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     else
     {
         int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 1);
-        if(bread(nbfisico, buf_bloque) == FALLO);
-            return FALLO;
+        if (bread(nbfisico, buf_bloque) == FALLO)
+            ;
+        return FALLO;
         memcpy(buf_bloque + desp1, buf_original, nbytes);
         if (bwrite(nbfisico, buf_bloque) == FALLO)
             return FALLO;
-
-
     }
 
     return 7;
@@ -94,7 +93,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 
     if(bread(nbfisico, buf_bloque) == -1){
         return FALLO;
-    }  
+    }
 
     //Caso en el que el buffer cabe en un bloque fisico
     if(primerBL == ultimoBL) {
@@ -117,7 +116,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 
         //2. Bloques lógicos intermedios
         for(int i = primerBL + 1; i < ultimoBL; i++) {
-            
+
             nbfisico = traducir_bloque_inodo(&inodo, i, 1);
             if(nbfisico == -1) {
                 return FALLO;
@@ -164,7 +163,6 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     return bytesEscritos;
 }
  */
-
 
 /**
  * Lee información de un fichero/directorio (correspondiente al nº de inodo, ninodo, pasado
@@ -236,7 +234,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
     struct inodo inodo;
     unsigned char buf_bloque[BLOCKSIZE];
-    
+
     //Leemos inodo
     if(leer_inodo(ninodo, &inodo) == -1) {
         return FALLO;
@@ -247,11 +245,11 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         fprintf(stderr, "No hay permisos de lectura\n");
         return FALLO;
     }
-    
+
     if(offset >= inodo.tamEnBytesLog) {
         return bytesLeidos;
     }
-    
+
     if(offset + nbytes >= inodo.tamEnBytesLog) {  //pretende leer más allá de EOF
         nbytes = inodo.tamEnBytesLog - offset;
         //leemos sólo los bytes que podemos desde el offset hasta EOF
@@ -269,8 +267,8 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         if(bread(nbfisico, buf_bloque) == -1) {
             return FALLO;
         }
-    }        
-    
+    }
+
     if(primerBL == ultimoBL) {
         if(nbfisico != -1) {
             memcpy(buf_original, buf_bloque + desp1, nbytes);
@@ -279,13 +277,13 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         bytesLeidos = nbytes;
 
     } else {
-        
+
         if(nbfisico != -1) {
             memcpy (buf_original, buf_bloque + desp1, BLOCKSIZE - desp1);
         }
 
         bytesLeidos = BLOCKSIZE - desp1;
-        
+
         for(int i = primerBL + 1; i < ultimoBL; i++) {
 
             nbfisico = traducir_bloque_inodo(&inodo, i, 0);
@@ -305,7 +303,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
                 return FALLO;
             }
             memcpy(buf_original + (nbytes - (desp2 + 1)), buf_bloque, desp2 + 1);
-        }        
+        }
 
         bytesLeidos += desp2 + 1;
     }
@@ -354,7 +352,7 @@ int mi_stat_f(unsigned int ninodo, struct STAT *p_stat)
 }
 
 /**
- * Cambia los permisos de un fichero/directorio (correspondiente al nº de inodo pasado como argumento, ninodo) con el valor que indique el argumento permisos. *
+ * Cambia los permisos de un fichero/directorio (correspondiente al nº de inodo pasado como argumento, ninodo)
  * con el valor que indique el argumento permisos.
  *
  * @param ninodo Número de inodo que queremos leer

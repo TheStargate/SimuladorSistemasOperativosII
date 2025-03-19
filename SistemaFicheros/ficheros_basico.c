@@ -508,7 +508,7 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
  * Enmascara la gestión de los diferentes rangos de punteros directos e indirectos del inodo, de manera que funciones externas
  * no tienen que preocuparse de cómo acceder a los bloques físicos apuntados desde el inodo.
  *
- * @param inodo Número de inodo que queremos leer
+ * @param ninodo Número de inodo que queremos leer
  * @param nblogico Número de bloque lógico que queremos traducir
  * @param reservar Indica si se debe reservar el bloque en caso de que no exista
  * @return Número de bloque físico correspondiente al bloque lógico indicado
