@@ -7,7 +7,7 @@ int main(int argc, char **argv)
     // Comprobar si el número de argumentos es correcto y si no mostrar sintaxis
     if (argc != 4)
     {
-        fprintf(stderr, RED "Número de argumentos incorrecto. Sintaxis: ./permitir <nombre_dispositivo> <ninodo> <permisos>" RESET);
+        fprintf(stderr, RED "Número de argumentos incorrecto. Sintaxis: ./permitir <nombre_dispositivo> <ninodo> <permisos>\n" RESET);
         return FALLO;
     }
 

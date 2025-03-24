@@ -538,7 +538,7 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
             if (nivel_punteros == nRangoBL)
             { // El bloque cuelga directamente del inodo
                 inodo.punterosIndirectos[nRangoBL - 1] = ptr;
-#if DEBUGN4
+#if DEBUGN5
                 printf(GRAY "\n[traducir_bloque_inodo()→ inodo.punterosIndirectos[%u] = %u (reservado BF %u para punteros_nivel%u)]" RESET, nRangoBL - 1, ptr, ptr, nivel_punteros);
 #endif
             }
@@ -549,7 +549,7 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
                 { // Salvamos en el dispositivo el buffer de punteros modificado
                     return FALLO;
                 }
-#if DEBUGN4
+#if DEBUGN5
                 printf(GRAY "\n[traducir_bloque_inodo()→ punteros_nivel%u [%u] = %u (reservado BF %u para punteros_nivel%u)]" RESET, nivel_punteros + 1, indice, ptr, ptr, nivel_punteros);
 #endif
             }
@@ -578,7 +578,7 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
         if (nRangoBL == 0)
         {                                           // Si era puntero directo
             inodo.punterosDirectos[nblogico] = ptr; // Asignamos la dirección del  bloque de datos en el inodo
-#if DEBUGN4
+#if DEBUGN5
             printf(GRAY "\n[traducir_bloque_inodo()→ inodo.punterosDirectos[%u] = %u (reservado BF %u para BL %u)]" RESET, nblogico, ptr, ptr, nblogico);
 #endif
         }
@@ -586,7 +586,7 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
         {
             buffer[indice] = ptr;    // Asignamos la dirección del bloque de datos en el buffer
             bwrite(ptr_ant, buffer); // Salvamos en el dispositivo el buffer de punteros modificado
-#if DEBUGN4
+#if DEBUGN5
             printf(GRAY "\n[traducir_bloque_inodo()→ punteros_nivel%u [%u] = %u (reservado BF %u para BL %u)]" RESET, nivel_punteros + 1, indice, ptr, ptr, nblogico);
 #endif
         }
@@ -695,11 +695,16 @@ int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *p
     return FALLO;
 }
 
+/**
+ * 
+ */
 int liberar_inodo(unsigned int ninodo)
 {
     struct inodo inodo;
     leer_inodo(ninodo, &inodo);
     liberar_bloques_inodo(0, &inodo);
+
+    return 7;
 }
 
 int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)

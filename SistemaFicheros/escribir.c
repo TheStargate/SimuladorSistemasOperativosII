@@ -9,7 +9,7 @@ int main(int argc, char **argv)
     // Comprobar si el número de argumentos es correcto y si no mostrar sintaxis
     if (argc != 4)
     {
-        fprintf(stderr, RED "Número de argumentos incorrecto. Sintaxis: ./escribir <nombre_dispositivo> <\"$(cat fichero)\"> <diferentes_inodos>" RESET);
+        fprintf(stderr, RED "Número de argumentos incorrecto. Sintaxis: ./escribir <nombre_dispositivo> <\"$(cat fichero)\"> <diferentes_inodos>\n" RESET);
         return FALLO;
     }
 
@@ -43,13 +43,13 @@ int main(int argc, char **argv)
     for (int i = 0; i < numOffsets; i++)
     {
         printf("Nº inodo reservado: %d", ninodo[i]);
-        printf("offset: %d", offset[i]);
+        printf("\noffset: %d", offset[i]);
         // Escribimos el fichero
         int bytesEscritos = mi_write_f(ninodo[i], buffer_texto, offset[i], tambuffer);
         mi_stat_f(ninodo[i], &stat[i]);
-        printf("Bytes escritos: %d", bytesEscritos);
-        printf("stat.tamEnBytesLog=%d", stat->tamEnBytesLog);
-        printf("stat.numBloquesOcupados=%d", stat->numBloquesOcupados);
+        printf("\nBytes escritos: %d", bytesEscritos);
+        printf("\nstat.tamEnBytesLog=%d", stat->tamEnBytesLog);
+        printf("\nstat.numBloquesOcupados=%d\n\n", stat->numBloquesOcupados);
 
         // (ELIMINAR DESPUÉS DE TESTEAR)
         memset(buffer_texto, 0, tambuffer);

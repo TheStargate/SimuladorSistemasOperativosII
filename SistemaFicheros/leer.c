@@ -9,7 +9,7 @@ int main(int argc, char **argv)
     // Comprobar si el número de argumentos es correcto y si no mostrar sintaxis
     if (argc != 3)
     {
-        fprintf(stderr, RED "Número de argumentos incorrecto. Sintaxis: ./leer <nombre_dispositivo> <ninodo>" RESET);
+        fprintf(stderr, RED "Número de argumentos incorrecto. Sintaxis: ./leer <nombre_dispositivo> <ninodo>\n" RESET);
         return FALLO;
     }
 

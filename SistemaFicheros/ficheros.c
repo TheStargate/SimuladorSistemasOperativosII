@@ -22,6 +22,8 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     int nbfisico;
     int bytes_escritos = 0;
 
+    leer_inodo(ninodo, &inodo);
+
     if ((inodo.permisos & 2) != 2)
     {
         fprintf(stderr, RED "No hay permisos de escritura\n" RESET);
@@ -45,6 +47,8 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         memcpy(buf_bloque + desp1, buf_original, nbytes);
         if (bwrite(nbfisico, buf_bloque) == FALLO)
             return FALLO;
+
+        bytes_escritos = nbytes;
     }
     else
     {
@@ -55,7 +59,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         memcpy(buf_bloque + desp1, buf_original, nbytes);
         if (bwrite(nbfisico, buf_bloque) == FALLO)
             return FALLO;
-        bytes_escritos += BLOCKSIZE;
+        bytes_escritos += BLOCKSIZE - desp1;
         // FASE 2
         for (int bl = primerBL + 1; bl < ultimoBL; bl++)
         {
@@ -71,7 +75,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         memcpy(buf_bloque, buf_original + (nbytes - (desp2 + 1)), desp2 + 1);
         if (bwrite(nbfisico, buf_bloque) == FALLO)
             return FALLO;
-        bytes_escritos += BLOCKSIZE;
+        bytes_escritos += BLOCKSIZE + desp2 + 1;
         if (leer_inodo(ninodo, &inodo) == FALLO)
             return FALLO;
 
@@ -210,6 +214,8 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsigned int nbytes)
 {
     struct inodo inodo;
+
+    leer_inodo(ninodo, &inodo);
 
     int bytesLeidos = 0;
 

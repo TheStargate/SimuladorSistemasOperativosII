@@ -6,7 +6,8 @@
 
 #define DEBUGN2 0
 #define DEBUGN3 0
-#define DEBUGN4 1
+#define DEBUGN4 0
+#define DEBUGN5 1
 
 #define posSB 0 // el superbloque se escribe en el primer bloque de nuestro FS
 #define tamSB 1
@@ -81,4 +82,4 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros);
 int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *ent);
 
 int liberar_inodo(unsigned int ninodo);
-int liberar_bloque_inodo (unsigned int primerBL, struct inodo *inodo);
+int liberar_bloques_inodo (unsigned int primerBL, struct inodo *inodo);
