@@ -704,9 +704,18 @@ int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *p
 int liberar_inodo(unsigned int ninodo)
 {
     struct inodo inodo;
+    struct superbloque SB;
+
     if (leer_inodo(ninodo, &inodo) == FALLO)
         return FALLO;
-    liberar_bloques_inodo(0, &inodo);
+    int liberados = liberar_bloques_inodo(0, &inodo);
+    inodo.numBloquesOcupados = inodo.numBloquesOcupados - liberados;
+    inodo.tipo = 'l';
+    inodo.tamEnBytesLog = 0;
+    if (bread(posSB,&SB) == FALLO) {
+        return FALLO;
+    }
+    
 
     return 7;
 }
