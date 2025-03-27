@@ -477,7 +477,9 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     int posInodoReservado;
     posInodoReservado = SB.posPrimerInodoLibre; // Guardamos en variable auxiliar la posición del primer inodo libre, es decir el que reservaremos.
     struct inodo inodoNuevo;
-    leer_inodo(posInodoReservado, &inodoNuevo);              // Ahora volcamos el inodo reservado dentro de nuestra variable.
+    if (leer_inodo(posInodoReservado, &inodoNuevo) == FALLO)              // Ahora volcamos el inodo reservado dentro de nuestra variable.
+        return FALLO;
+    
     SB.posPrimerInodoLibre = inodoNuevo.punterosDirectos[0]; // El SB apunta al siguiente inodo, ya que cada inodo contiene la dirección del siguiente inodo en la lista enlazada.
     inodoNuevo.tipo = tipo;
     inodoNuevo.permisos = permisos;
@@ -520,7 +522,8 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
     unsigned int buffer[NPUNTEROS];
     struct inodo inodo;
 
-    leer_inodo(ninodo, &inodo);
+    if (leer_inodo(ninodo, &inodo) == FALLO)
+        return FALLO;
     nRangoBL = obtener_nRangoBL(&inodo, nblogico, &ptr); // 0:D, 1:I0, 2:I1, 3:I2
     nivel_punteros = nRangoBL;                           // El nivel_punteros más alto es el que cuelga directamente del inodo
 
@@ -701,7 +704,8 @@ int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *p
 int liberar_inodo(unsigned int ninodo)
 {
     struct inodo inodo;
-    leer_inodo(ninodo, &inodo);
+    if (leer_inodo(ninodo, &inodo) == FALLO)
+        return FALLO;
     liberar_bloques_inodo(0, &inodo);
 
     return 7;

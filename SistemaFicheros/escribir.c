@@ -48,8 +48,8 @@ int main(int argc, char **argv)
         int bytesEscritos = mi_write_f(ninodo[i], buffer_texto, offset[i], tambuffer);
         mi_stat_f(ninodo[i], &stat[i]);
         printf("\nBytes escritos: %d", bytesEscritos);
-        printf("\nstat.tamEnBytesLog=%d", stat->tamEnBytesLog);
-        printf("\nstat.numBloquesOcupados=%d\n\n", stat->numBloquesOcupados);
+        printf("\nstat.tamEnBytesLog=%d", stat[i].tamEnBytesLog);
+        printf("\nstat.numBloquesOcupados=%d\n\n", stat[i].numBloquesOcupados);
 
         // (ELIMINAR DESPUÉS DE TESTEAR)
         memset(buffer_texto, 0, tambuffer);

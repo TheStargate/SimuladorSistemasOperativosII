@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     mi_stat_f(ninodo, &stat);
 
     fprintf(stderr, "\ntotal_leidos " BLUE "%d" RESET, totalBytesLeidos);
-    fprintf(stderr, "\ntamEnBytesLog " BLUE "%d" RESET, stat.tamEnBytesLog);
+    fprintf(stderr, "\ntamEnBytesLog " BLUE "%d\n" RESET, stat.tamEnBytesLog);
 
     bumount();
 }

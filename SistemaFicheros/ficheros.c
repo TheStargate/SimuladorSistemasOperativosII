@@ -22,7 +22,8 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     int nbfisico;
     int bytes_escritos = 0;
 
-    leer_inodo(ninodo, &inodo);
+    if (leer_inodo(ninodo, &inodo) == FALLO)
+        return FALLO;
 
     if ((inodo.permisos & 2) != 2)
     {
@@ -56,7 +57,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         nbfisico = traducir_bloque_inodo(ninodo, primerBL, 1);
         if (bread(nbfisico, buf_bloque) == FALLO)
             return FALLO;
-        memcpy(buf_bloque + desp1, buf_original, nbytes);
+        memcpy(buf_bloque + desp1, buf_original, BLOCKSIZE - desp1);
         if (bwrite(nbfisico, buf_bloque) == FALLO)
             return FALLO;
         bytes_escritos += BLOCKSIZE - desp1;
@@ -75,131 +76,26 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         memcpy(buf_bloque, buf_original + (nbytes - (desp2 + 1)), desp2 + 1);
         if (bwrite(nbfisico, buf_bloque) == FALLO)
             return FALLO;
-        bytes_escritos += BLOCKSIZE + desp2 + 1;
-        if (leer_inodo(ninodo, &inodo) == FALLO)
-            return FALLO;
-
-        // Actualizar el tamaño lógico del archivo si hemos escrito más allá del EOF
-        if ((offset + nbytes) > inodo.tamEnBytesLog)
-            inodo.tamEnBytesLog = offset + nbytes;
-
-        // Actualizar tiempos
-        inodo.mtime = time(NULL);
-        inodo.ctime = time(NULL);
-
-        // Guardar los cambios en el inodo
-        if (escribir_inodo(ninodo, &inodo) == FALLO)
-            return FALLO;
+        bytes_escritos += desp2 + 1;
     }
+
+    if (leer_inodo(ninodo, &inodo) == FALLO)
+            return FALLO;
+
+    // Actualizar el tamaño lógico del archivo si hemos escrito más allá del EOF
+    if (ultimoBL * BLOCKSIZE + desp2 + 1 > inodo.tamEnBytesLog)
+        inodo.tamEnBytesLog = ultimoBL * BLOCKSIZE + desp2 + 1;
+
+    // Actualizar tiempos
+    inodo.mtime = time(NULL);
+    inodo.ctime = time(NULL);
+
+    // Guardar los cambios en el inodo
+    if (escribir_inodo(ninodo, &inodo) == FALLO)
+        return FALLO;
 
     return bytes_escritos;
 }
-
-// Esto enteoria es un mi_write_f que funciona
-/**
- * int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offset, unsigned int nbytes) {
-
-    //Declaraciones
-    int primerBL = offset / BLOCKSIZE;
-    int ultimoBL = (offset + nbytes - 1) / BLOCKSIZE;
-
-    int desp1 = offset % BLOCKSIZE;
-    int desp2 = (offset + nbytes - 1) % BLOCKSIZE;
-
-    int nbfisico;
-    char unsigned buf_bloque[BLOCKSIZE];
-
-    int bytesEscritos = 0; //Leva el recuento de bytes escritos realmente
-
-    //Leemos inodo
-    struct inodo inodo;
-    if(leer_inodo(ninodo, &inodo) == -1) {
-        return FALLO;
-    }
-
-    //Comprobamos que tenga los permisos para escribir
-    if((inodo.permisos & 2) != 2) {
-        fprintf(stderr, "No hay permisos de escritura\n");
-        return FALLO;
-    }
-
-    nbfisico = traducir_bloque_inodo(&inodo, primerBL, 1);
-    if(nbfisico == -1) {
-        return FALLO;
-    }
-
-    if(bread(nbfisico, buf_bloque) == -1){
-        return FALLO;
-    }
-
-    //Caso en el que el buffer cabe en un bloque fisico
-    if(primerBL == ultimoBL) {
-
-        memcpy(buf_bloque + desp1, buf_original, nbytes);
-
-        bytesEscritos = nbytes;
-
-    } else { //Caso en el que la escritura ocupa mas de un bloque
-
-        //1. Primer bloque lógico
-        memcpy(buf_bloque + desp1, buf_original, BLOCKSIZE - desp1);
-
-        bytesEscritos = BLOCKSIZE - desp1;
-
-        if(bwrite(nbfisico, buf_bloque) == -1) {
-            return FALLO;
-        }
-
-
-        //2. Bloques lógicos intermedios
-        for(int i = primerBL + 1; i < ultimoBL; i++) {
-
-            nbfisico = traducir_bloque_inodo(&inodo, i, 1);
-            if(nbfisico == -1) {
-                return FALLO;
-            }
-
-            if(bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE) == -1) {
-                return FALLO;
-            }
-
-            bytesEscritos += BLOCKSIZE;
-        }
-
-        //3. Último bloque lógico
-        nbfisico = traducir_bloque_inodo(&inodo, ultimoBL, 1);
-        if(nbfisico == -1) {
-            return FALLO;
-        }
-
-        if(bread(nbfisico, buf_bloque) == -1) {
-            return FALLO;
-        }
-
-        memcpy(buf_bloque, buf_original + (nbytes - (desp2 - 1)), desp2 + 1);
-
-        bytesEscritos += desp2 + 1;
-    }
-
-    if(bwrite(nbfisico, buf_bloque) == -1) {
-        return FALLO;
-    }
-
-    //Comprobar si hemos escrito más allá del final del fichero
-    if(inodo.tamEnBytesLog < (ultimoBL * BLOCKSIZE + desp2 + 1)) {
-        inodo.tamEnBytesLog = ultimoBL * BLOCKSIZE + desp2 + 1;
-        inodo.ctime = time(NULL);
-    }
-
-    inodo.mtime = time(NULL);
-
-    if(escribir_inodo(ninodo, &inodo) == FALLO) {
-        return FALLO;
-    }
-
-    return bytesEscritos;
-}
- */
 
 /**
  * Lee información de un fichero/directorio (correspondiente al nº de inodo, ninodo, pasado
@@ -215,8 +111,8 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 {
     struct inodo inodo;
 
-    leer_inodo(ninodo, &inodo);
-
+    if (leer_inodo(ninodo, &inodo) == FALLO)
+        return FALLO;
     int bytesLeidos = 0;
 
     // Primer y último bloque lógico
@@ -268,7 +164,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 // Esto enteoria es un mi_read_f que funciona
 /**
  * int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsigned int nbytes) {
- * 
+ *
     //Leemos inodo
     if(leer_inodo(ninodo, &inodo) == -1) {
         return FALLO;
