@@ -51,10 +51,6 @@ int main(int argc, char **argv)
         printf("\nstat.tamEnBytesLog=%d", stat[i].tamEnBytesLog);
         printf("\nstat.numBloquesOcupados=%d\n\n", stat[i].numBloquesOcupados);
 
-        // (ELIMINAR DESPUÉS DE TESTEAR)
-        memset(buffer_texto, 0, tambuffer);
-        int bytesLeidos = mi_read_f(ninodo[i], buffer_texto, offset[i], tambuffer);
-        write(1, buffer_texto, tambuffer);
     }
 
     bumount();

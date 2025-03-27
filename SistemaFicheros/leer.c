@@ -18,11 +18,12 @@ int main(int argc, char **argv)
     int offset = 0;
     int totalBytesLeidos = 0;
     struct STAT stat;
-
+        
     bmount(argv[1]);
 
     memset(buffer_texto, 0, tambuffer);
     int leidos = mi_read_f(ninodo, buffer_texto, offset, tambuffer);
+
     while (leidos > 0)
     {
         write(1, buffer_texto, leidos);
