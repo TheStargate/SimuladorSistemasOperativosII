@@ -55,12 +55,15 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     {
         // FASE 1
         nbfisico = traducir_bloque_inodo(ninodo, primerBL, 1);
+        if (nbfisico == FALLO)
+            return FALLO;
         if (bread(nbfisico, buf_bloque) == FALLO)
             return FALLO;
         memcpy(buf_bloque + desp1, buf_original, BLOCKSIZE - desp1);
         if (bwrite(nbfisico, buf_bloque) == FALLO)
             return FALLO;
         bytes_escritos += BLOCKSIZE - desp1;
+
         // FASE 2
         for (int bl = primerBL + 1; bl < ultimoBL; bl++)
         {
@@ -69,6 +72,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
                 return FALLO;
             bytes_escritos += BLOCKSIZE;
         }
+        
         // FASE 3
         nbfisico = traducir_bloque_inodo(ninodo, ultimoBL, 1);
         if (bread(nbfisico, buf_bloque) == FALLO)
@@ -80,7 +84,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     }
 
     if (leer_inodo(ninodo, &inodo) == FALLO)
-            return FALLO;
+        return FALLO;
 
     // Actualizar el tamaño lógico del archivo si hemos escrito más allá del EOF
     if (ultimoBL * BLOCKSIZE + desp2 + 1 > inodo.tamEnBytesLog)
@@ -113,7 +117,9 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
     if (leer_inodo(ninodo, &inodo) == FALLO)
         return FALLO;
+
     int bytesLeidos = 0;
+    int nbfisico;
 
     // Primer y último bloque lógico
     int primerBL = offset / BLOCKSIZE;
@@ -136,29 +142,73 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     // Comprobar si el offset es mayor o igual que el tamaño tamEnBytesLog
     if (offset >= inodo.tamEnBytesLog)
     {
-        return 0;
+        return bytesLeidos;
     }
     else if ((offset + nbytes) >= inodo.tamEnBytesLog)
     {
-        return inodo.tamEnBytesLog - offset;
+        nbytes = inodo.tamEnBytesLog - offset;
     }
 
     // Contemplar el caso en que el fichero/directorio ocupe un único bloque lógico
     if (primerBL == ultimoBL)
     {
 
-        unsigned char buf_bloque[BLOCKSIZE];
+        int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 0);
+        if (nbfisico != FALLO)
+        {
+            if (bread(nbfisico, buf_bloque) == FALLO)
+                return FALLO;
 
-        int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 1);
-        if (bread(nbfisico, buf_bloque) == FALLO)
-            return FALLO;
-        memcpy(buf_bloque + desp1, buf_original, nbytes);
-        if (bwrite(nbfisico, buf_bloque) == FALLO)
-            return FALLO;
+            memcpy(buf_original, buf_bloque + desp1, nbytes);
+
+            bytesLeidos = nbytes;
+        }
     }
-    else
+    else // Contemplar el caso en que el fichero/directorio ocupe más de un bloque lógico
     {
+
+        // FASE 1
+        nbfisico = traducir_bloque_inodo(ninodo, primerBL, 0);
+        if (nbfisico != FALLO)
+        {
+
+            if (bread(nbfisico, buf_bloque) == FALLO)
+                return FALLO;
+            memcpy(buf_original, buf_bloque + desp1, BLOCKSIZE - desp1);
+
+            bytesLeidos += BLOCKSIZE - desp1;
+        }
+
+        // FASE 2
+        for (int bl = primerBL + 1; bl < ultimoBL; bl++)
+        {
+            nbfisico = traducir_bloque_inodo(ninodo, bl, 0);
+            if (nbfisico != FALLO)
+            {
+
+                if (bread(nbfisico, buf_bloque) == FALLO)
+                    return FALLO;
+                memcpy(buf_original + (BLOCKSIZE - desp1) + (bl - primerBL - 1) * BLOCKSIZE, buf_bloque, BLOCKSIZE);
+
+                bytesLeidos += BLOCKSIZE;
+            }
+        }
+
+        // FASE 3
+        nbfisico = traducir_bloque_inodo(ninodo, ultimoBL, 0);
+        if (nbfisico != FALLO)
+        {
+            if (bread(nbfisico, buf_bloque) == FALLO)
+                return FALLO;
+            memcpy(buf_original + (nbytes - (desp2 + 1)), buf_bloque, desp2 + 1);
+
+            bytesLeidos += desp2 + 1;
+        }
     }
+    
+    inodo.atime = time(NULL);
+
+    return bytesLeidos;
 }
 
 // Esto enteoria es un mi_read_f que funciona
