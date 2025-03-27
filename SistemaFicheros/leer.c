@@ -29,7 +29,7 @@ int main(int argc, char **argv)
         write(1, buffer_texto, leidos);
         totalBytesLeidos += leidos;
 
-        offset += BLOCKSIZE; //offset += tambuffer;
+        offset += tambuffer;
         memset(buffer_texto, 0, tambuffer);
         leidos = mi_read_f(ninodo, buffer_texto, offset, tambuffer);
     }
