@@ -715,9 +715,21 @@ int liberar_inodo(unsigned int ninodo)
     if (bread(posSB,&SB) == FALLO) {
         return FALLO;
     }
-    
+    //No se si está del todo bien.
+    inodo.punterosDirectos[0] = SB.posPrimerInodoLibre;
+    SB.posPrimerInodoLibre = ninodo;
+    SB.cantInodosLibres++;
+    if (bwrite(posSB, &SB) == FALLO) {
+        return FALLO;
+    }
 
-    return 7;
+    inodo.ctime = time(NULL);
+
+    if (escribir_inodo(ninodo,&inodo) == FALLO) {
+        return FALLO;
+    }
+
+    return ninodo;
 }
 
 int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
