@@ -858,7 +858,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
 int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
 {
     unsigned int nivel_punteros = 0, indice = 0, ptr = 0, nBL, ultimoBL;
-    int nRangoBL;
+    int nRangoBL, contador_bwrites = 0, contador_breads = 0;
     unsigned int bloques_punteros[3][NPUNTEROS];
     unsigned int bufAux_punteros[NPUNTEROS] = {0};
     int ptr_nivel[3];
@@ -887,6 +887,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
             if (indice == 0 || nBL == primerBL)
             {
                 bread(ptr, bloques_punteros[nivel_punteros - 1]);
+                contador_breads++;
             }
             ptr_nivel[nivel_punteros - 1] = ptr;
             indices[nivel_punteros - 1] = indice;
@@ -915,6 +916,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                     if (memcmp(bloques_punteros[nivel_punteros - 1], bufAux_punteros, BLOCKSIZE) == 0)
                     {
                         liberar_bloque(ptr);
+
                         liberados++;
 
                         // MEJORA 1 : Saltar los bloques lógicos que ya no es necesario explorar
@@ -943,6 +945,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                     else
                     {
                         bwrite(ptr, bloques_punteros[nivel_punteros - 1]);
+                        contador_bwrites++;
                         nivel_punteros = nRangoBL + 1;
                     }
                 }
@@ -974,5 +977,9 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
             }
         }
     }
+
+#if DEBUGN6
+    fprintf(stderr, "[liberar_bloques_inodo()→ total bloques liberados: %d, total_breads: %d, total_bwrites:%d]\n", liberados, contador_breads, contador_bwrites);
+#endif
     return liberados;
 }
