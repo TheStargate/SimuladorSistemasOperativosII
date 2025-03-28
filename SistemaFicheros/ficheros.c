@@ -272,3 +272,70 @@ int mi_chmod_f(unsigned int ninodo, unsigned char permisos)
 
     return EXITO;
 }
+
+/**
+ * Trunca un fichero/directorio (correspondiente al nº de inodo, ninodo, pasado como argumento)
+ * a los bytes indicados como nbytes, liberando los bloques necesarios. En nuestro sistema de ficheros,
+ * esta función será llamada desde la función mi_unlink() de la capa de directorios, la cuál a su vez
+ * será llamada desde el programa mi_rm.c, y nos servirá para eliminar una entrada de un directorio.
+ *
+ * @param ninodo Número de inodo que queremos truncar
+ * @param nbytes Número de bytes a los que queremos truncar el fichero/directorio
+ * @return Cantidad de bloques liberados o FALLO en caso de error
+ */
+int mi_truncar_f(unsigned int ninodo, unsigned int nbytes)
+{
+    struct inodo inodo;
+    int primerBL, bloques_liberados;
+    
+    // Leer el inodo
+    if (leer_inodo(ninodo, &inodo) == FALLO) {
+        return FALLO;
+    }
+    
+    // Comprobar permisos de escritura
+    if ((inodo.permisos & 2) != 2) {
+        return FALLO;
+    }
+    
+    // Comprobar que nbytes no es mayor que el tamaño actual del fichero
+    if (nbytes > inodo.tamEnBytesLog) {
+        return FALLO;
+    }
+    
+    // Si nbytes es igual al tamaño actual, no hay nada que hacer
+    if (nbytes == inodo.tamEnBytesLog) {
+        return 0;  // No se liberan bloques
+    }
+    
+    // Calcular el primer bloque lógico a liberar
+    if (nbytes % BLOCKSIZE == 0) {
+        primerBL = nbytes / BLOCKSIZE;
+    } else {
+        primerBL = nbytes / BLOCKSIZE + 1;
+    }
+    
+    // Liberar los bloques a partir de primerBL
+    bloques_liberados = liberar_bloques_inodo(primerBL, &inodo);
+    if (bloques_liberados < 0) {
+        return FALLO;
+    }
+    
+    // Actualizar tiempos
+    inodo.mtime = time(NULL);
+    inodo.ctime = time(NULL);
+
+    // Actualizar tamEnBytesLog
+    inodo.tamEnBytesLog = nbytes;
+
+    // Actualizar el número de bloques ocupados
+    inodo.numBloquesOcupados -= bloques_liberados;
+    
+    // Guardar el inodo actualizado
+    if (escribir_inodo(ninodo, &inodo) == FALLO) {
+        return FALLO;
+    }
+    
+    // Devolver la cantidad de bloques liberados
+    return bloques_liberados;
+}

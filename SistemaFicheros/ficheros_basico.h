@@ -83,4 +83,3 @@ int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *e
 
 int liberar_inodo(unsigned int ninodo);
 int liberar_bloques_inodo (unsigned int primerBL, struct inodo *inodo);
-int mi_truncar_f(unsigned int ninodo, unsigned int nbytes);
