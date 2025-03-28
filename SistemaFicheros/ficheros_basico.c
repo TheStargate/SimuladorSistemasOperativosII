@@ -477,9 +477,9 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     int posInodoReservado;
     posInodoReservado = SB.posPrimerInodoLibre; // Guardamos en variable auxiliar la posición del primer inodo libre, es decir el que reservaremos.
     struct inodo inodoNuevo;
-    if (leer_inodo(posInodoReservado, &inodoNuevo) == FALLO)              // Ahora volcamos el inodo reservado dentro de nuestra variable.
+    if (leer_inodo(posInodoReservado, &inodoNuevo) == FALLO) // Ahora volcamos el inodo reservado dentro de nuestra variable.
         return FALLO;
-    
+
     SB.posPrimerInodoLibre = inodoNuevo.punterosDirectos[0]; // El SB apunta al siguiente inodo, ya que cada inodo contiene la dirección del siguiente inodo en la lista enlazada.
     inodoNuevo.tipo = tipo;
     inodoNuevo.permisos = permisos;
@@ -699,7 +699,14 @@ int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *p
 }
 
 /**
- * 
+ * Liberar un inodo implica por un lado, que tal inodo pasará a la cabeza de la lista de inodos libres
+ * (actualizando el campo SB.posPrimerInodoLibre) y tendremos un inodo más libre en el sistema,
+ * SB.cantInodosLibres, y por otro lado, habrá que recorrer la estructura de enlaces del inodo para
+ * liberar todos aquellos bloques de datos que estaba ocupando, más todos aquellos bloques índice que
+ * se hubieran creado para apuntar a esos bloques.
+ *
+ * @param ninodo Número de inodo que queremos liberar
+ * @return Número de inodo liberado
  */
 int liberar_inodo(unsigned int ninodo)
 {
@@ -712,26 +719,37 @@ int liberar_inodo(unsigned int ninodo)
     inodo.numBloquesOcupados = inodo.numBloquesOcupados - liberados;
     inodo.tipo = 'l';
     inodo.tamEnBytesLog = 0;
-    if (bread(posSB,&SB) == FALLO) {
+    if (bread(posSB, &SB) == FALLO)
+    {
         return FALLO;
     }
-    //No se si está del todo bien.
+    // No se si está del todo bien.
     inodo.punterosDirectos[0] = SB.posPrimerInodoLibre;
     SB.posPrimerInodoLibre = ninodo;
     SB.cantInodosLibres++;
-    if (bwrite(posSB, &SB) == FALLO) {
+    if (bwrite(posSB, &SB) == FALLO)
+    {
         return FALLO;
     }
 
     inodo.ctime = time(NULL);
 
-    if (escribir_inodo(ninodo,&inodo) == FALLO) {
+    if (escribir_inodo(ninodo, &inodo) == FALLO)
+    {
         return FALLO;
     }
 
     return ninodo;
 }
 
+/**
+ * Libera todos los bloques ocupados (con la ayuda de la función liberar_bloque())
+ * a partir del bloque lógico indicado por el argumento primerBL (inclusive).
+ *
+ * @param primerBL Primer bloque lógico a liberar
+ * @param inodo Puntero al inodo que contiene los bloques a liberar
+ * @return Número de bloques liberados
+ */
 int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
 {
     unsigned int nivel_punteros = 0, indice = 0, ptr = 0, nBL, ultimoBL;
@@ -801,8 +819,9 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                         {
                             inodo->punterosIndirectos[nRangoBL - 1] = 0;
                         }
-                        
-                        // MEJORA 1 : Saltar los bloques lógicos que ya no es necesario explorar 
+
+                        // MEJORA 1 : Saltar los bloques lógicos que ya no es necesario explorar
+                        // al haber eliminado un bloque de punteros
                         unsigned int bloques_a_saltar = NPUNTEROS * nivel_punteros;
                         if (nBL + bloques_a_saltar <= ultimoBL)
                         {
@@ -826,7 +845,76 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
         }
         else
         {
+            // MEJORA 2 : Saltar los bloques lógicos que ya no es necesario explorar
+            // cuando se pone a 0 un puntero a bloque de punteros
         }
     }
     return liberados;
+}
+
+/**
+ * Trunca un fichero/directorio (correspondiente al nº de inodo, ninodo, pasado como argumento)
+ * a los bytes indicados como nbytes, liberando los bloques necesarios. En nuestro sistema de ficheros,
+ * esta función será llamada desde la función mi_unlink() de la capa de directorios, la cuál a su vez
+ * será llamada desde el programa mi_rm.c, y nos servirá para eliminar una entrada de un directorio.
+ *
+ * @param ninodo Número de inodo que queremos truncar
+ * @param nbytes Número de bytes a los que queremos truncar el fichero/directorio
+ * @return Cantidad de bloques liberados o FALLO en caso de error
+ */
+int mi_truncar_f(unsigned int ninodo, unsigned int nbytes)
+{
+    struct inodo inodo;
+    int primerBL, bloques_liberados;
+    
+    // Leer el inodo
+    if (leer_inodo(ninodo, &inodo) == FALLO) {
+        return FALLO;
+    }
+    
+    // Comprobar permisos de escritura
+    if ((inodo.permisos & 2) != 2) {
+        return FALLO;
+    }
+    
+    // Comprobar que nbytes no es mayor que el tamaño actual del fichero
+    if (nbytes > inodo.tamEnBytesLog) {
+        return FALLO;
+    }
+    
+    // Si nbytes es igual al tamaño actual, no hay nada que hacer
+    if (nbytes == inodo.tamEnBytesLog) {
+        return 0;  // No se liberan bloques
+    }
+    
+    // Calcular el primer bloque lógico a liberar
+    if (nbytes % BLOCKSIZE == 0) {
+        primerBL = nbytes / BLOCKSIZE;
+    } else {
+        primerBL = nbytes / BLOCKSIZE + 1;
+    }
+    
+    // Liberar los bloques a partir de primerBL
+    bloques_liberados = liberar_bloques_inodo(primerBL, &inodo);
+    if (bloques_liberados < 0) {
+        return FALLO;
+    }
+    
+    // Actualizar tiempos
+    inodo.mtime = time(NULL);
+    inodo.ctime = time(NULL);
+
+    // Actualizar tamEnBytesLog
+    inodo.tamEnBytesLog = nbytes;
+
+    // Actualizar el número de bloques ocupados
+    inodo.numBloquesOcupados -= bloques_liberados;
+    
+    // Guardar el inodo actualizado
+    if (escribir_inodo(ninodo, &inodo) == FALLO) {
+        return FALLO;
+    }
+    
+    // Devolver la cantidad de bloques liberados
+    return bloques_liberados;
 }
