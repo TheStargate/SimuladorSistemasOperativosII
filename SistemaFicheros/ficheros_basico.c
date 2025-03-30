@@ -856,11 +856,11 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                        // Si el bloque de punteros está en el nivel 1, entonces elevamos el número de punteros, que es igual al número de bloques lógicos a 1.
                        // Si se encuentra en el nivel 2, pues elevado a 2, y si se encuentra en el nivel 3 elevado a 3.
                         
-                        if (nRangoBL == 1) {
+                        if (nivel_punteros == 1) {
                             nBL+= NPUNTEROS;
-                        } else if (nRangoBL == 2) {
+                        } else if (nivel_punteros == 2) {
                             nBL+= NPUNTEROS * NPUNTEROS;
-                        } else if (nRangoBL == 3) {
+                        } else if (nivel_punteros == 3) {
                             nBL += NPUNTEROS * NPUNTEROS * NPUNTEROS;
                         }
                         /*
