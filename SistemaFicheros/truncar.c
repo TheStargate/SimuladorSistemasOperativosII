@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 
     bmount(argv[1]);
 
-    if (nbytes < 0)
+    if (nbytes == 0)
     {
         liberar_inodo(ninodo);
     }
@@ -27,6 +27,27 @@ int main(int argc, char **argv)
     {
         mi_truncar_f(ninodo, nbytes);
     }
+
+    struct STAT stat;
+    mi_stat_f(ninodo, &stat);
+
+    fprintf(stderr, "\nDATOS INODO 1:\n");
+
+    struct tm *ts;
+    char atime[80];
+    char mtime[80];
+    char ctime[80];
+    char btime[80];
+
+    ts = localtime(&stat.atime);
+    strftime(atime, sizeof(atime), "%a %Y-%m-%d %H:%M:%S", ts);
+    ts = localtime(&stat.mtime);
+    strftime(mtime, sizeof(mtime), "%a %Y-%m-%d %H:%M:%S", ts);
+    ts = localtime(&stat.ctime);
+    strftime(ctime, sizeof(ctime), "%a %Y-%m-%d %H:%M:%S", ts);
+    ts = localtime(&stat.btime);
+    strftime(btime, sizeof(btime), "%a %Y-%m-%d %H:%M:%S", ts);
+    printf("Tipo: %c\natime: %s\nmtime: %s\nctime: %s\nbtime: %s\nnlinks: %d\ntamEnBytesLog: %d\nnumBloquesOcupados: %d\n", stat.tipo, atime, mtime, ctime, btime, stat.nlinks, stat.tamEnBytesLog, stat.numBloquesOcupados);
 
     bumount();
 
