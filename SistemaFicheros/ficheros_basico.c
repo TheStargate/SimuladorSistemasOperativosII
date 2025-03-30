@@ -857,11 +857,11 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                        // Si se encuentra en el nivel 2, pues elevado a 2, y si se encuentra en el nivel 3 elevado a 3.
                         
                         if (nivel_punteros == 1) {
-                            nBL+= NPUNTEROS;
+                            nBL+= NPUNTEROS-1;
                         } else if (nivel_punteros == 2) {
-                            nBL+= NPUNTEROS * NPUNTEROS;
+                            nBL+= (NPUNTEROS * NPUNTEROS)-1;
                         } else if (nivel_punteros == 3) {
-                            nBL += NPUNTEROS * NPUNTEROS * NPUNTEROS;
+                            nBL += (NPUNTEROS * NPUNTEROS * NPUNTEROS)-1;
                         }
                         /*
 
