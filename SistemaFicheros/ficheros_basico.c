@@ -850,8 +850,23 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
 
 
                         */
+                       int nBLOriginal = nBL+1;
+                       
+                       //nBL += (int) pow (NPUNTEROS,nRangoBL);
+                       // Si el bloque de punteros está en el nivel 1, entonces elevamos el número de punteros, que es igual al número de bloques lógicos a 1.
+                       // Si se encuentra en el nivel 2, pues elevado a 2, y si se encuentra en el nivel 3 elevado a 3.
+                        
+                        if (nRangoBL == 1) {
+                            nBL+= NPUNTEROS;
+                        } else if (nRangoBL == 2) {
+                            nBL+= NPUNTEROS * NPUNTEROS;
+                        } else if (nRangoBL == 3) {
+                            nBL += NPUNTEROS * NPUNTEROS * NPUNTEROS;
+                        }
+                        /*
 
-                        int nBLOriginal = nBL+1;
+                        
+                        
                         // MEJORA 1 : Saltar los bloques lógicos que ya no es necesario explorar
                         // al haber eliminado un bloque de punteros
                         unsigned int bloques_a_saltar = 1;
@@ -867,7 +882,9 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                         else
                         {
                             nBL = ultimoBL;
-                        }
+                        } */
+
+
 
 #if DEBUGN6
                         fprintf(stderr, GREEN "\n[liberar_bloques_inodo()→ Saltamos del BL %d al BL %d]" RESET, nBLOriginal, nBL);
