@@ -856,6 +856,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                        // El caso 0 no se contempla, porque total estará aumentando con el for.
                        // Si el bloque de punteros está en el nivel 1, entonces elevamos el número de punteros, que es igual al número de bloques lógicos a 1.
                        // Si se encuentra en el nivel 2, pues elevado a 2, y si se encuentra en el nivel 3 elevado a 3.
+                        /*i
                         int nBLOriginal = nBL+1;
                         unsigned int bloques_a_saltar = 1;
                         if (nivel_punteros == 1) {
@@ -872,8 +873,8 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                         else
                         {
                             nBL = ultimoBL;
-                        }
-                        /*
+                        } */
+                        
 
                         
                         
@@ -893,7 +894,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                         else
                         {
                             nBL = ultimoBL;
-                        } */
+                        } 
 
 
 
