@@ -1,4 +1,7 @@
-// Programa de pruebas para el sistema de ficheros
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Implementación del programa leer_sf.c para leer el superbloque y mostrar su contenido.
+ */
 
 #include "ficheros_basico.h"
 

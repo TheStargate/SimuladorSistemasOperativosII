@@ -1,4 +1,7 @@
-// Librería que contiene constantes y funciones para el manejo de bloques
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Librería que contiene constantes y funciones para el manejo de bloques
+ */
 
 #include <stdio.h>    //printf(), fprintf(), stderr, stdout, stdin
 #include <fcntl.h>    //O_WRONLY, O_CREAT, O_TRUNC

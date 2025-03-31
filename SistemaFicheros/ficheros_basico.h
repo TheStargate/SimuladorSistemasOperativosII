@@ -1,4 +1,7 @@
-// Librería que contiene constantes y funciones para el manejo de ficheros basicos
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Libreria de funciones para la gestión de un sistema de ficheros básico.
+ */
 
 #include <time.h>
 #include <limits.h>

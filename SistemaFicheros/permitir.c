@@ -1,4 +1,7 @@
-// Programa de pruebas para cambiar permisos
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Implementación del programa permitir, que cambia los permisos de un inodo.
+ */
 
 #include "ficheros.h"
 

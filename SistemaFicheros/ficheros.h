@@ -1,4 +1,7 @@
-//Librería que incluye las funciones y constantes de la capa de ficheros
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Libreria de funciones para la gestión de ficheros y directorios en un sistema de ficheros.
+ */
 
 #include "ficheros_basico.h"
 

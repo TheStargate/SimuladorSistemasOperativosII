@@ -1,4 +1,7 @@
-// Programa de pruebas para mi_write_f
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Implementación del programa escribir.c que permite escribir en un fichero
+ */
 
 #include "ficheros.h"
 
@@ -50,7 +53,6 @@ int main(int argc, char **argv)
         printf("\nBytes escritos: %d", bytesEscritos);
         printf("\nstat.tamEnBytesLog=%d", stat[i].tamEnBytesLog);
         printf("\nstat.numBloquesOcupados=%d\n\n", stat[i].numBloquesOcupados);
-
     }
 
     bumount();

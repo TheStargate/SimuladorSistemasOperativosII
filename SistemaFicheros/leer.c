@@ -1,4 +1,7 @@
-// Programa de pruebas para mi_read_f
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Implementación del programa leer.c que permite leer un inodo de un dispositivo
+ */
 
 #include "ficheros.h"
 

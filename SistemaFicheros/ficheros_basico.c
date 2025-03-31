@@ -666,7 +666,7 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros)
  *
  * @param inodo Número de inodo que queremos leer
  * @param nblogico Número de bloque lógico que queremos traducir
- * @param ent Puntero a la dirección de memoria donde se almacenará el bloque físico correspondiente
+ * @param ptr Puntero a la dirección de memoria donde se almacenará el bloque físico correspondiente
  * @return Número de rango asociado al bloque lógico indicado
  */
 int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *ptr)
@@ -805,13 +805,20 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
             nivel_punteros--;
         }
 
-        if (ptr > 0)
+        if (ptr > 0) // si existe bloque de datos
         {
             // Liberamos los bloques de datos ocupados
             liberar_bloque(ptr);
             liberados++;
 #if DEBUGN6
-            fprintf(stderr, GRAY "\n[liberar_bloques_inodo()→ liberado BF %d de datos para BL %d]" RESET, ptr, nBL);
+            if (nivel_punteros == 0)
+            {
+                fprintf(stderr, GRAY "\n[liberar_bloques_inodo()→ liberado BF %d de datos para BL %d]" RESET, ptr, nBL);
+            }
+            else
+            {
+                fprintf(stderr, GRAY "\n[liberar_bloques_inodo()→ liberado BF %d de punteros_nivel%d correspondiente al BL %d]" RESET, ptr, nivel_punteros, nBL);
+            }
 #endif
 
             // Miramos si es un puntero directo
@@ -835,33 +842,39 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                         liberar_bloque(ptr);
                         liberados++;
 #if DEBUGN6
-                        fprintf(stderr, GRAY "\n[liberar_bloques_inodo()→ liberado BF %d de datos para BL %d]" RESET, ptr, nBL);
+                        if (nivel_punteros == 0)
+                        {
+                            fprintf(stderr, GRAY "\n[liberar_bloques_inodo()→ liberado BF %d de datos para BL %d]" RESET, ptr, nBL);
+                        }
+                        else
+                        {
+                            fprintf(stderr, GRAY "\n[liberar_bloques_inodo()→ liberado BF %d de punteros_nivel%d correspondiente al BL %d]" RESET, ptr, nivel_punteros, nBL);
+                        }
 #endif
 
                         // MEJORA 1 : Saltar los bloques lógicos que ya no es necesario explorar
                         // al haber eliminado un bloque de punteros
                         int nBLOriginal = nBL + 1;
-                        int saltos;
                         if (nivel_punteros == 1)
                         {
-                            saltos = (INDIRECTOS0 - nBL)-1;
-                            nBL+= saltos;
+                            // Calculamos el módulo a partir del bloque actual pamedir el número de bloques a saltar
+                            int modulo = (nBL - DIRECTOS) % (NPUNTEROS); // % 256
+                            int salto = (INDIRECTOS0 - DIRECTOS) - modulo;
+                            nBL += salto - 1;
                         }
                         else if (nivel_punteros == 2)
                         {
-                            int saltos_n1 = (INDIRECTOS0-nBL) -1;
-                            nBL+= saltos;
-                            //Mensaje debugg
-                            int saltos_n2 = (INDIRECTOS1 - nBL) -1;
-                            nBL+= saltos;
-                            //Mensaje debugg
-                            
+                            int modulo = (nBL - DIRECTOS) % ((NPUNTEROS * NPUNTEROS));
+                            int salto = (INDIRECTOS1 - DIRECTOS) - modulo;
+                            nBL += salto - 1;
                         }
                         else if (nivel_punteros == 3)
                         {
-                            int saltos = INDIRECTOS2 - nBL;
-                            nBL+= saltos;
+                            int modulo = (nBL - DIRECTOS) % ((NPUNTEROS * NPUNTEROS * NPUNTEROS));
+                            int salto = (INDIRECTOS2 - DIRECTOS) - modulo;
+                            nBL += salto - 1;
                         }
+
 #if DEBUGN6
                         fprintf(stderr, GREEN "\n[liberar_bloques_inodo()→ Saltamos del BL %d al BL %d]" RESET, nBLOriginal, nBL);
 #endif
@@ -877,14 +890,55 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                         // escribimos en el dispositivo el bloque de punteros modificado
                         bwrite(ptr, bloques_punteros[nivel_punteros - 1]);
                         contador_bwrites++;
+
+#if DEBUGN6
+                        fprintf(stderr, ORANGE "\n[liberar_bloques_inodo()→ salvado BF %d de punteros_nivel%d correspondiente al BL %d]" RESET, ptr, nivel_punteros, nBL);
+#endif
+
                         // Salimos del bucle (no es necesario liberar los bloques de niveles superiores a los que cuelga)
                         nivel_punteros = nRangoBL + 1;
                     }
                 }
             }
         }
-    }
+        else if (nBL >= DIRECTOS)
+        {
 
+            // MEJORA 2:  saltar los BLs que no se necesite explorar
+            // cuando se pone a 0 un puntero a bloque de punteros
+            int nBLOriginal = nBL;
+            int salto = 0;
+
+            for (int i = indice; i < NPUNTEROS; i++)
+            {
+                if (bloques_punteros[nivel_punteros][i] == 0)
+                {
+                    salto++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if (nivel_punteros == 0)
+            {
+                nBL += salto - 1;
+            }
+            else if (nivel_punteros == 1)
+            {
+                nBL += salto * NPUNTEROS - 1;
+            }
+            else if (nivel_punteros == 2)
+            {
+                nBL += (salto * NPUNTEROS * NPUNTEROS) - 1;
+            }
+
+#if DEBUGN6
+            fprintf(stderr, BLUE "\n[liberar_bloques_inodo()→ Saltamos del BL %d al BL %d]" RESET, nBLOriginal, nBL);
+#endif
+        }
+    }
 #if DEBUGN6
     fprintf(stderr, BLUE "\n[liberar_bloques_inodo()→ total bloques liberados: %d, total_breads: %d, total_bwrites:%d]\n" RESET, liberados, contador_breads, contador_bwrites);
 #endif
