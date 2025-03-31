@@ -971,6 +971,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                         }
                     }
                     */
+            }
         }
 
 #if DEBUGN6
