@@ -876,8 +876,8 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                         } */
                         
 
-                        
-                        
+                        // version anterior
+                        /*
                         // MEJORA 1 : Saltar los bloques lógicos que ya no es necesario explorar
                         // al haber eliminado un bloque de punteros
                         int nBLOriginal = nBL+1;
@@ -894,7 +894,28 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                         else
                         {
                             nBL = ultimoBL;
-                        } 
+                        }
+                        */
+                        
+
+                        // MEJORA 1 : Saltar los bloques lógicos que ya no es necesario explorar
+                        // al haber eliminado un bloque de punteros
+                        int nBLOriginal = nBL+1;
+                        int nivel_salto = nivel_punteros;
+                        unsigned int bloques_por_entrada = 1;
+                        for (int i = 0; i < nivel_salto; i++) {
+                            bloques_por_entrada *= NPUNTEROS;
+                        }
+
+                        unsigned int entrada_actual = indices[nivel_salto - 1];
+                        unsigned int salto = entrada_actual * bloques_por_entrada;
+                        unsigned int siguiente_entrada = (entrada_actual + 1) * bloques_por_entrada;
+
+                        // Ajustar nBL al final del rango actual
+                        nBL = (nBL - (nBL % bloques_por_entrada)) + bloques_por_entrada - 1;
+
+                        // Asegurar que no se exceda el último BL
+                        if (nBL > ultimoBL) nBL = ultimoBL;
 
 
 
