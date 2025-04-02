@@ -767,6 +767,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
     int ptr_nivel[3];  // punteros a bloques de punteros de cada nivel
     int indices[3];    // indices de cada nivel
     int liberados = 0; // nº de bloques liberados
+    int nsaltos [3]; // número de saltos para cada nivel de punteros, en mejora 1.
 
     if (inodo->tamEnBytesLog == 0) // el fichero está vacío
         return liberados;
@@ -854,30 +855,33 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
 
                         // MEJORA 1 : Saltar los bloques lógicos que ya no es necesario explorar
                         // al haber eliminado un bloque de punteros
-                        int nBLOriginal = nBL + 1;
+                        //int nBLOriginal = nBL + 1;
                         if (nivel_punteros == 1)
                         {
                             // Calculamos el módulo a partir del bloque actual pamedir el número de bloques a saltar
                             int modulo = (nBL - DIRECTOS) % (NPUNTEROS); // % 256
                             int salto = (INDIRECTOS0 - DIRECTOS) - modulo;
-                            nBL += salto - 1;
+                            nsaltos[nivel_punteros-1] = salto;
+                           // nBL += salto - 1;
                         }
                         else if (nivel_punteros == 2)
                         {
                             int modulo = (nBL - DIRECTOS) % ((NPUNTEROS * NPUNTEROS));
                             int salto = (INDIRECTOS1 - DIRECTOS) - modulo;
-                            nBL += salto - 1;
+                            nsaltos[nivel_punteros-1] = salto;
+                           // nBL += salto - 1;
                         }
                         else if (nivel_punteros == 3)
                         {
                             int modulo = (nBL - DIRECTOS) % ((NPUNTEROS * NPUNTEROS * NPUNTEROS));
                             int salto = (INDIRECTOS2 - DIRECTOS) - modulo;
-                            nBL += salto - 1;
+                            nsaltos[nivel_punteros-1] = salto;
+                          //  nBL += salto - 1;
                         }
-
+/*
 #if DEBUGN6
                         fprintf(stderr, GREEN "\n[liberar_bloques_inodo()→ Saltamos del BL %d al BL %d]" RESET, nBLOriginal, nBL);
-#endif
+#endif */
 
                         if (nivel_punteros == nRangoBL)
                         {
@@ -898,7 +902,17 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                         // Salimos del bucle (no es necesario liberar los bloques de niveles superiores a los que cuelga)
                         nivel_punteros = nRangoBL + 1;
                     }
-                }
+                } // Debugg
+                //Imprimirá el número de saltos correspondiente a cada nivel de punteros.
+                //Los valores estarán guardados ya que hemos calculado realmente la mejora en en el while para cada nivel.
+                //Lo que ahora lo aplicamos.
+                    for (int i = 0; i < nRangoBL; i++) {
+                        int nBLOriginal = nBL + 1;
+                        nBL+= nsaltos[i]-1;
+#if DEBUGN6
+                        fprintf(stderr, GREEN "\n[liberar_bloques_inodo()→ Saltamos del BL %d al BL %d]" RESET, nBLOriginal, nBL);
+#endif 
+                    }
             }
         }
         else if (nBL >= DIRECTOS)
