@@ -180,7 +180,7 @@ int initAI()
 }
 
 /**
- * Escribe en el bloque indicado por MB seleccionado un bit para indicar si está ocupado (1) o libre (0)
+ * Escribe en el bloque indicado de MB un bit para indicar si está ocupado (1) o libre (0)
  *
  * @param nbloque Posición de MB que queremos modificar
  * @param bit Valor que se le asignará al bit correspondiente (1 o 0)
