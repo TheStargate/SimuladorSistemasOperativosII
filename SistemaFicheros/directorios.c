@@ -37,6 +37,9 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
         *tipo = 'd';
 
         // Copiar la parte inicial hasta el segundo '/'
+        // Vamos iterando con los valores del puntero, como segundo_slash apunta
+        // al segundo slash de camino, entonces al ir incrementando llegará un momento que tendrán el mismo valor
+        // Ahí se detiene el bucle y se pone el elemento nulo. 
         int i = 0;
         while (camino + 1 + i < segundo_slash)
         {
@@ -44,6 +47,19 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
             i++;
         }
         inicial[i] = '\0'; // Asegurar terminación nula
+
+        /*
+        Sugerencia porque considero que en el momento que nos lo pidan, será más claro de ver:
+
+        int len_camino = strlen(camino);
+        int len_segundo_slash = strlen(segundo_slash);
+        int iteraciones = len_camino - len_segundo_slash;
+
+        for (int i = 0; i < iteraciones-1; i++) {
+            inicial[i] = camino[1+i];
+        }
+        inicial[iteraciones] = '\0';
+        */
 
         // Copiar el resto (final) a partir del segundo '/'
         strcpy(final, segundo_slash);
