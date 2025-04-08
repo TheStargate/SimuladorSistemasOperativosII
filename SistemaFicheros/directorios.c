@@ -39,7 +39,7 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
         // Copiar la parte inicial hasta el segundo '/'
         // Vamos iterando con los valores del puntero, como segundo_slash apunta
         // al segundo slash de camino, entonces al ir incrementando llegará un momento que tendrán el mismo valor
-        // Ahí se detiene el bucle y se pone el elemento nulo. 
+        // Ahí se detiene el bucle y se pone el elemento nulo.
         int i = 0;
         while (camino + 1 + i < segundo_slash)
         {
@@ -92,6 +92,10 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
     int cant_entradas_inodo, num_entrada_inodo;
     struct superbloque SB;
 
+    // Leer el superbloque
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+
     // Camino parcial es "/"
     if (0 == 0) // es el directorio raiz // ToDo
     {
@@ -142,7 +146,7 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
     }
 
     // Si la entrada no existe
-    if (strcomp(entrada.nombre, inicial) != 0)
+    if (strcmp(entrada.nombre, inicial) != 0)
     {
         switch (reservar)
         {
@@ -159,7 +163,7 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
             }
 
             // Si es directorio comprobar que tiene permiso de escritura
-            if (inodo_dir.permisos & 2 == 0)
+            if ((inodo_dir.permisos & 2) != 2)
             {
                 mostrar_error_buscar_entrada(ERROR_PERMISO_ESCRITURA);
                 return FALLO;
@@ -223,3 +227,4 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
         }
         return EXITO;
     }
+}
