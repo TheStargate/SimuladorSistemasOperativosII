@@ -3,7 +3,7 @@
  * Descripción: Implementación del programa leer_sf.c para leer el superbloque y mostrar su contenido.
  */
 
-#include "ficheros_basico.h"
+#include "directorios.h"
 
 int main(int argc, char **argv)
 {
@@ -122,17 +122,17 @@ int main(int argc, char **argv)
     // Traducción de bloques lógicos
     printf("\nINODO 1. TRADUCCION DE LOS BLOQUES LOGICOS 8, 204, 30.004, 400.004 y 468.750\n");
 
-    int ninodo = reservar_inodo('f',6);
+    int ninodo = reservar_inodo('f', 6);
 
-    traducir_bloque_inodo(ninodo,8,1);
+    traducir_bloque_inodo(ninodo, 8, 1);
     printf("\n");
-    traducir_bloque_inodo(ninodo,204,1);
+    traducir_bloque_inodo(ninodo, 204, 1);
     printf("\n");
-    traducir_bloque_inodo(ninodo,30004,1);
+    traducir_bloque_inodo(ninodo, 30004, 1);
     printf("\n");
-    traducir_bloque_inodo(ninodo,400004,1);
+    traducir_bloque_inodo(ninodo, 400004, 1);
     printf("\n");
-    traducir_bloque_inodo(ninodo,468750,1);
+    traducir_bloque_inodo(ninodo, 468750, 1);
 
     printf("\n\nDATOS DEL INODO RESERVADO\n");
 
@@ -154,13 +154,46 @@ int main(int argc, char **argv)
     strftime(btime, sizeof(btime), "%a %Y-%m-%d %H:%M:%S", ts);
     printf("Tipo: %c\nPermisos: %d\natime: %s\nmtime: %s\nctime: %s\nbtime: %s\nnlinks: %d\ntamEnBytesLog: %d\nnumBloquesOcupados: %d\n", inodo.tipo, inodo.permisos, atime, mtime, ctime, btime, inodo.nlinks, inodo.tamEnBytesLog, inodo.numBloquesOcupados);
 
-     // Leemos el superbloque
-     if (bread(posSB, &SB) == FALLO)
-     return FALLO;
+    // Leemos el superbloque
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
 
-     printf(BLUE "\nSB.posPrimerInodoLibre: %u\n" RESET, SB.posPrimerInodoLibre);
+    printf(BLUE "\nSB.posPrimerInodoLibre: %u\n" RESET, SB.posPrimerInodoLibre);
+
+#endif
+
+#if DEBUGN7
+    // Mostrar creación directorios y errores
+    mostrar_buscar_entrada("pruebas/", 1);           // ERROR_CAMINO_INCORRECTO
+    mostrar_buscar_entrada("/pruebas/", 0);          // ERROR_NO_EXISTE_ENTRADA_CONSULTA
+    mostrar_buscar_entrada("/pruebas/docs/", 1);     // ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO
+    mostrar_buscar_entrada("/pruebas/", 1);          // creamos /pruebas/
+    mostrar_buscar_entrada("/pruebas/docs/", 1);     // creamos /pruebas/docs/
+    mostrar_buscar_entrada("/pruebas/docs/doc1", 1); // creamos /pruebas/docs/doc1
+    mostrar_buscar_entrada("/pruebas/docs/doc1/doc11", 1);
+    // ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO
+    mostrar_buscar_entrada("/pruebas/", 1);          // ERROR_ENTRADA_YA_EXISTENTE
+    mostrar_buscar_entrada("/pruebas/docs/doc1", 0); // consultamos /pruebas/docs/doc1
+    mostrar_buscar_entrada("/pruebas/docs/doc1", 1); // ERROR_ENTRADA_YA_EXISTENTE
+    mostrar_buscar_entrada("/pruebas/casos/", 1);    // creamos /pruebas/casos/
+    mostrar_buscar_entrada("/pruebas/docs/doc2", 1); // creamos /pruebas/docs/doc2
 
 #endif
 
     bumount();
+}
+
+void mostrar_buscar_entrada(char *camino, char reservar)
+{
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+    int error;
+    printf("\ncamino: %s, reservar: %d\n", camino, reservar);
+    if ((error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, reservar, 6)) < 0)
+    {
+        mostrar_error_buscar_entrada(error);
+    }
+    printf("**********************************************************************\n");
+    return;
 }

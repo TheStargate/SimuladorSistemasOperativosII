@@ -48,19 +48,6 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
         }
         inicial[i] = '\0'; // Asegurar terminación nula
 
-        /*
-        Sugerencia porque considero que en el momento que nos lo pidan, será más claro de ver:
-
-        int len_camino = strlen(camino);
-        int len_segundo_slash = strlen(segundo_slash);
-        int iteraciones = len_camino - len_segundo_slash;
-
-        for (int i = 0; i < iteraciones-1; i++) {
-            inicial[i] = camino[1+i];
-        }
-        inicial[iteraciones] = '\0';
-        */
-
         // Copiar el resto (final) a partir del segundo '/'
         strcpy(final, segundo_slash);
     }
@@ -97,9 +84,9 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
         return FALLO;
 
     // Camino parcial es "/"
-    if (0 == 0) // es el directorio raiz // ToDo
+    if (camino_parcial[0] == '/' && strlen(camino_parcial) == 1) // es el directorio raiz
     {
-        *p_inodo = SB.posInodoRaiz;
+        *p_inodo = SB.posInodoRaiz; // raiz siempre asociada al inodo 1
         *p_entrada = 0;
         return EXITO;
     }
@@ -175,10 +162,10 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
 
                 if (tipo == 'd')
                 {
-                    if (final[0] == '/') // ToDo
+                    if (final[0] == '/' && strlen(final) == 1)
                     {
                         // Reservar un inodo como un directorio y asignarlo a la entrada
-                        // ToDo
+                        entrada.ninodo = reservar_inodo(tipo, 6);
                     }
                     else
                     {
@@ -189,12 +176,13 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
                 else
                 {
                     // Reservar un inodo como un fichero y asignarlo a la entrada
-                    // ToDo
+                    entrada.ninodo = reservar_inodo(tipo, 6);
                 }
-
                 // Escribir la entrada en el directorio padre
-                // ToDo
-
+                escribir_inodo(entrada.ninodo,&inodo_dir);
+                // ToDo (POR EL FINal)
+                
+                
                 if (0 == 0) // Error de escritura // ToDo
                 {
                     if (0 == 0) // Se había reservado un inodo para la entrada (entrada.inodo != 1) // ToDo
@@ -227,4 +215,118 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
         }
         return EXITO;
     }
+}
+
+/**
+ * Función de la capa de directorios que crea un fichero/directorio y su entrada de directorio.
+ * Se basa, principalmente, en llamar a la función buscar_entrada() con reservar = 1.
+ * (Realmente habría que leer el superbloque para pasarle la posición del inodo del directorio raíz,
+ * aunque por simplicidad podríamos suponer directamente que p_inodo_dir es 0).
+ *
+ * @param camino Cadena de caracteres que contiene el camino a crear
+ * @param permisos Permisos de acceso al fichero/directorio
+ * @return EXITO si se ha creado correctamente, FALLO si ha habido algún error.
+ */
+int mi_creat(const char *camino, unsigned char permisos)
+{
+}
+
+/**
+ * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
+ * (el nombre de cada entrada puede venir separado por '|' o por un tabulador) y devuelve el número de entradas.
+ * Implica leer de forma secuencial el contenido de un inodo de tipo directorio, con mi_read_f() leyendo sus entradas.
+ * Buscamos la entrada correspondiente a *camino para comprobar que existe y leemos su inodo, comprobando que se trata
+ * de un directorio y que tiene permisos de lectura. Para cada entrada concatenamos (mediante la función strcat())
+ * su nombre al buffer con un separador.
+ *
+ * @param camino Cadena de caracteres que contiene el camino a mostrar
+ * @param buffer Buffer de memoria donde se almacenará el contenido del directorio
+ * @return Número de entradas leídas, o -1 si ha habido un error.
+ */
+int mi_dir(const char *camino, char *buffer)
+{
+}
+
+/**
+ * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
+ * (el nombre de cada entrada puede venir separado por '|' o por un tabulador) y devuelve el número de entradas.
+ * Implica leer de forma secuencial el contenido de un inodo de tipo directorio, con mi_read_f() leyendo sus entradas.
+ * Buscamos la entrada correspondiente a *camino para comprobar que existe y leemos su inodo, comprobando que se trata
+ * de un directorio y que tiene permisos de lectura. Para cada entrada concatenamos (mediante la función strcat())
+ * su nombre al buffer con un separador.
+ *
+ * Si queremos ampliar la utilidad de mi_dir() para aplicarla también a ficheros, podemos añadir un parámetro que
+ * indique el tipo y que nos lo pasará mi_ls.c, para luego poder comparar la sintaxis con el tipo real del inodo
+ * que obtendremos al leer el inodo.
+ *
+ * @param camino Cadena de caracteres que contiene el camino a mostrar
+ * @param buffer Buffer de memoria donde se almacenará el contenido del directorio
+ * @param tipo Tipo de entrada ('d' para directorio, 'f' para fichero)
+ * @return Número de entradas leídas, o -1 si ha habido un error.
+ */
+int mi_dir(const char *camino, char *buffer, char tipo)
+{
+}
+
+/**
+ * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
+ * (el nombre de cada entrada puede venir separado por '|' o por un tabulador) y devuelve el número de entradas.
+ * Implica leer de forma secuencial el contenido de un inodo de tipo directorio, con mi_read_f() leyendo sus entradas.
+ * Buscamos la entrada correspondiente a *camino para comprobar que existe y leemos su inodo, comprobando que se trata
+ * de un directorio y que tiene permisos de lectura. Para cada entrada concatenamos (mediante la función strcat())
+ * su nombre al buffer con un separador.
+ *
+ * Si queremos ampliar la utilidad de mi_dir() para que muestre el listado simple o el extendido (long)
+ * según si se usa la opción -l o no en el comando, podemos añadir un parámetro flag, que nos lo pasará
+ * mi_ls.c, para luego construir/mostrar un tipo u otro de listado.
+ *
+ * @param camino Cadena de caracteres que contiene el camino a mostrar
+ * @param buffer Buffer de memoria donde se almacenará el contenido del directorio
+ * @param tipo Tipo de entrada ('d' para directorio, 'f' para fichero)
+ * @param flag Indica si se debe mostrar el listado simple o extendido
+ * @return Número de entradas leídas, o -1 si ha habido un error.
+ */
+int mi_dir(const char *camino, char *buffer, char flag)
+{
+}
+
+/**
+ * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
+ * (el nombre de cada entrada puede venir separado por '|' o por un tabulador) y devuelve el número de entradas.
+ * Implica leer de forma secuencial el contenido de un inodo de tipo directorio, con mi_read_f() leyendo sus entradas.
+ * Buscamos la entrada correspondiente a *camino para comprobar que existe y leemos su inodo, comprobando que se trata
+ * de un directorio y que tiene permisos de lectura. Para cada entrada concatenamos (mediante la función strcat())
+ * su nombre al buffer con un separador.
+ * @param camino Cadena de caracteres que contiene el camino a mostrar
+ * @param buffer Buffer de memoria donde se almacenará el contenido del directorio
+ * @param tipo Tipo de entrada ('d' para directorio, 'f' para fichero)
+ * @param flag Indica si se debe mostrar el listado simple o extendido
+ * @return Número de entradas leídas, o -1 si ha habido un error.
+ */
+int mi_dir(const char *camino, char *buffer, char tipo, char flag)
+{
+}
+
+/**
+ * Buscar la entrada *camino con buscar_entrada() para obtener el nº de inodo (p_inodo).
+ * Si la entrada existe llamamos a la función mi_chmod_f() de ficheros.c pasándole el p_inodo.
+ *
+ * @param camino Cadena de caracteres que contiene el camino a modificar
+ * @param permisos Permisos de acceso al fichero/directorio
+ * @return EXITO si se ha modificado correctamente, FALLO si ha habido algún error.
+ */
+int mi_chmod(const char *camino, unsigned char permisos)
+{
+}
+
+/**
+ * Buscar la entrada *camino con buscar_entrada() para obtener el p_inodo.
+ * Si la entrada existe llamamos a la función mi_stat_f() de ficheros.c pasándole el p_inodo
+ *
+ * @param camino Cadena de caracteres que contiene el camino a modificar
+ * @param p_stat Puntero a la estructura de estado del inodo
+ * @return EXITO si se ha modificado correctamente, FALLO si ha habido algún error.
+ */
+int mi_stat(const char *camino, struct STAT *p_stat)
+{
 }

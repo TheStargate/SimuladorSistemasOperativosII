@@ -3,7 +3,7 @@
  * Descripción: Programa que se encarga de inicializar el sistema de archivos
  */
 
-#include "ficheros_basico.h"
+ #include "directorios.h"
 
 int main(int argc, char **argv)
 {
