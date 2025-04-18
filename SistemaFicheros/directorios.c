@@ -72,6 +72,7 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
 {
     // Definición de variables
     struct entrada entrada;
+    struct entrada entradas[BLOCKSIZE / sizeof(struct entrada)];
     struct inodo inodo_dir;
     char inicial[sizeof(entrada.nombre)];
     char final[strlen(camino_parcial)];
@@ -97,6 +98,10 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
         return FALLO;
     }
 
+#if DEBUGN7
+    printf(GRAY "[buscar_entrada()→ inicial: %s, final: %s, reservar: %u]\n" RESET, inicial, final, reservar);
+#endif
+
     if (leer_inodo(*p_inodo_dir, &inodo_dir) == FALLO)
     {
         mostrar_error_buscar_entrada(ERROR_PERMISO_LECTURA);
@@ -104,7 +109,7 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
     }
 
     // Inicializar el buffer de lectura con ceros
-    memset(&entrada, 0, sizeof(struct entrada));
+    memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
 
     // Calcular la cantidad de entradas que puede tener el inodo
     cant_entradas_inodo = inodo_dir.tamEnBytesLog / sizeof(struct entrada);
@@ -112,23 +117,42 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
 
     if (cant_entradas_inodo > 0)
     {
-        // Leer el bloque del inodo
-        if (mi_read_f(*p_inodo_dir, &entrada, num_entrada_inodo * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+
+        // MEJORA BUFFER ENTRADAS
+        
+        // Leer el primer bloque de entradas
+        if (mi_read_f(*p_inodo_dir, entradas, num_entrada_inodo * sizeof(struct entrada), BLOCKSIZE) == FALLO)
         {
             mostrar_error_buscar_entrada(ERROR_PERMISO_LECTURA);
             return FALLO;
         }
 
         // Buscar la entrada en el bloque leído
-        while (num_entrada_inodo < cant_entradas_inodo && strcmp(entrada.nombre, inicial) != 0)
+        while (num_entrada_inodo < cant_entradas_inodo)
         {
+            // Iteramos a través de las entradas del bloque actual
+            for (int i = 0; i < BLOCKSIZE / sizeof(struct entrada); i++)
+            {
+                if (strcmp(entradas[i].nombre, inicial) == 0)
+                {
+                    entrada = entradas[i];
+                    break;
+                }
+            }
+
+            if (entrada.ninodo != 0)  // Si hemos encontrado la entrada
+            {
+                break;
+            }
+
+            // Si no encontramos la entrada, leemos el siguiente bloque
             num_entrada_inodo++;
-            if (mi_read_f(*p_inodo_dir, &entrada, num_entrada_inodo * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+            memset(entradas, 0, BLOCKSIZE);
+            if (mi_read_f(*p_inodo_dir, entradas, num_entrada_inodo * sizeof(struct entrada), BLOCKSIZE) == FALLO)
             {
                 mostrar_error_buscar_entrada(ERROR_PERMISO_LECTURA);
                 return FALLO;
             }
-            memset(&entrada, 0, sizeof(struct entrada)); // Limpiar el buffer de entrada
         }
     }
 
@@ -165,55 +189,91 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
                     if (final[0] == '/' && strlen(final) == 1)
                     {
                         // Reservar un inodo como un directorio y asignarlo a la entrada
-                        entrada.ninodo = reservar_inodo(tipo, 6);
+                        entrada.ninodo = reservar_inodo(tipo, permisos);
                     }
                     else
-                    {
+                    { // No es el final de la ruta
                         mostrar_error_buscar_entrada(ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO);
                         return FALLO;
                     }
                 }
                 else
-                {
+                { // Es un fichero
                     // Reservar un inodo como un fichero y asignarlo a la entrada
-                    entrada.ninodo = reservar_inodo(tipo, 6);
+                    entrada.ninodo = reservar_inodo(tipo, permisos);
                 }
+
+#if DEBUGN7
+                printf(GRAY "[buscar_entrada()→ reservado inodo %u tipo %c con permisos %u para %s]\n" RESET, entrada.ninodo, tipo, permisos, inicial);
+#endif
+
                 // Escribir la entrada en el directorio padre
-                escribir_inodo(entrada.ninodo,&inodo_dir);
-                // ToDo (POR EL FINal)
-                
-                
-                if (0 == 0) // Error de escritura // ToDo
-                {
-                    if (0 == 0) // Se había reservado un inodo para la entrada (entrada.inodo != 1) // ToDo
+                if (mi_write_f(*p_inodo_dir, &entrada, num_entrada_inodo * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+                { // Error de escritura
+                    if (entrada.ninodo != -1)
                     {
-                        liberar_inodo(0); // ToDo // liberar el inodo
+                        liberar_inodo(entrada.ninodo);
                     }
                     return FALLO;
                 }
+#if DEBUGN7
+                printf(GRAY "[buscar_entrada()→ creada entrada: %s, %u]\n" RESET, inicial, entrada.ninodo);
+#endif
             }
         }
-
-        // Si hemos llegado al final del camino
-        if (0 == 0) // ToDo
+    }
+    // Si hemos llegado al final del camino
+    if ((tipo == 'f' && strlen(final) == 0) || (tipo == 'd' && strlen(final) == 1))
+    {
+        if ((num_entrada_inodo < cant_entradas_inodo) && (reservar == 1))
         {
-            if ((num_entrada_inodo < cant_entradas_inodo) && (reservar == 1))
-            {
-                mostrar_error_buscar_entrada(ERROR_ENTRADA_YA_EXISTENTE);
-                return FALLO;
-            }
+            // modo escritura y la entrada ya existe
+            mostrar_error_buscar_entrada(ERROR_ENTRADA_YA_EXISTENTE);
+            return FALLO;
+        }
 
-            // Cortamos la recursividad
-            *p_inodo;   // ToDo // asignar a *p_inodo el numero de inodo del directorio o fichero creado o leido
-            *p_entrada; // ToDo //  asignar a *p_entrada el número de su entrada dentro del último directorio que lo contiene
-            return EXITO;
-        }
-        else
-        {
-            *p_inodo_dir; // ToDo //  asignamos a *p_inodo_dir el puntero al inodo que se indica en la entrada encontrada
-            return buscar_entrada(final, p_inodo_dir, p_inodo, p_entrada, reservar, permisos);
-        }
+        // Cortamos la recursividad
+        *p_inodo = entrada.ninodo;      // asignar a *p_inodo el numero de inodo del directorio o fichero creado o leido
+        *p_entrada = num_entrada_inodo; //  asignar a *p_entrada el número de su entrada dentro del último directorio que lo contiene
         return EXITO;
+    }
+    else
+    {
+        *p_inodo_dir = entrada.ninodo; //  asignamos a *p_inodo_dir el puntero al inodo que se indica en la entrada encontrada
+        return buscar_entrada(final, p_inodo_dir, p_inodo, p_entrada, reservar, permisos);
+    }
+    return EXITO;
+}
+
+/**
+ * Función para mostrar los errores de buscar_entrada()
+ */
+void mostrar_error_buscar_entrada(int error)
+{
+    // fprintf(stderr, "Error: %d\n", error);
+    switch (error)
+    {
+    case -2:
+        fprintf(stderr, RED "Error: Camino incorrecto.\n" RESET);
+        break;
+    case -3:
+        fprintf(stderr, RED "Error: Permiso denegado de lectura.\n" RESET);
+        break;
+    case -4:
+        fprintf(stderr, RED "Error: No existe el archivo o el directorio.\n" RESET);
+        break;
+    case -5:
+        fprintf(stderr, RED "Error: No existe algún directorio intermedio.\n" RESET);
+        break;
+    case -6:
+        fprintf(stderr, RED "Error: Permiso denegado de escritura.\n" RESET);
+        break;
+    case -7:
+        fprintf(stderr, RED "Error: El archivo ya existe.\n" RESET);
+        break;
+    case -8:
+        fprintf(stderr, RED "Error: No es un directorio.\n" RESET);
+        break;
     }
 }
 
@@ -243,9 +303,9 @@ int mi_creat(const char *camino, unsigned char permisos)
  * @param buffer Buffer de memoria donde se almacenará el contenido del directorio
  * @return Número de entradas leídas, o -1 si ha habido un error.
  */
-int mi_dir(const char *camino, char *buffer)
-{
-}
+// int mi_dir(const char *camino, char *buffer)
+//{
+// }
 
 /**
  * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
@@ -264,9 +324,9 @@ int mi_dir(const char *camino, char *buffer)
  * @param tipo Tipo de entrada ('d' para directorio, 'f' para fichero)
  * @return Número de entradas leídas, o -1 si ha habido un error.
  */
-int mi_dir(const char *camino, char *buffer, char tipo)
-{
-}
+// int mi_dir(const char *camino, char *buffer, char tipo)
+//{
+// }
 
 /**
  * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
@@ -286,9 +346,9 @@ int mi_dir(const char *camino, char *buffer, char tipo)
  * @param flag Indica si se debe mostrar el listado simple o extendido
  * @return Número de entradas leídas, o -1 si ha habido un error.
  */
-int mi_dir(const char *camino, char *buffer, char flag)
-{
-}
+// int mi_dir(const char *camino, char *buffer, char flag)
+//{
+// }
 
 /**
  * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
