@@ -289,6 +289,14 @@ void mostrar_error_buscar_entrada(int error)
  */
 int mi_creat(const char *camino, unsigned char permisos)
 {
+    
+    unsigned int p_inodo;
+    unsigned int p_entrada;
+
+    if (buscar_entrada(camino,0,&p_inodo,&p_entrada,1,permisos) == FALLO) {
+        return FALLO;
+    }
+    return EXITO;
 }
 
 /**
