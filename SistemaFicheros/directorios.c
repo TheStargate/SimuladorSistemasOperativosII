@@ -373,6 +373,31 @@ int mi_creat(const char *camino, unsigned char permisos)
  */
 int mi_dir(const char *camino, char *buffer, char tipo, char flag)
 {
+    //Nos pasan un camino.
+    //Con buscar entrada obtenemos le valor del inodo
+    //Luego con mi_read_f, obtenemos info de un inodo pasado por parametro y lo guardamos en un buffer.
+    unsigned int p_inodo;
+    unsigned int p_entrada;
+    unsigned char permisos;
+    
+    if (buscar_entrada(camino,0,&p_inodo,&p_entrada,0,permisos)== FALLO) {
+        return FALLO;
+    }
+    struct inodo inodo;
+    if (leer_inodo(p_inodo,&inodo) == FALLO) {
+        return FALLO;
+    }
+    if (!(inodo.permisos & 4) || inodo.tipo != 'd') {
+        return FALLO;
+    }
+    memset(buffer,0 ,sizeof(buffer));
+    int nbytes_leidos =  mi_read_f(p_inodo,buffer,0,inodo.tamEnBytesLog);
+    if (nbytes_leidos == FALLO) return FALLO;
+    int n = nbytes_leidos / sizeof(struct entrada);
+
+    for (int i = 0; i < n; i++) {
+        
+    }
 }
 
 /**
