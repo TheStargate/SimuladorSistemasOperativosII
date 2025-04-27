@@ -395,6 +395,11 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     {
         return FALLO;
     }
+    if (tipo != inodo.tipo)
+    {
+        fprintf(stderr, "Error: la sintaxis no concuerda con el tipo\n");
+        return FALLO;
+    }
     struct entrada buffer_entradas[BLOCKSIZE / sizeof(struct entrada)];
     memset(buffer_entradas, 0, BLOCKSIZE / sizeof(struct entrada));
     int nbytes_leidos = mi_read_f(p_inodo, buffer_entradas, 0, inodo.tamEnBytesLog);
@@ -404,10 +409,11 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     memset(buffer, 0, sizeof(buffer));
     for (int i = 0; i < n; i++)
     {
-        strcat(buffer, buffer_entradas[i].nombre);
-        strcat(buffer, "|");
+
         if (leer_inodo(buffer_entradas[i].ninodo, &inodo) == FALLO)
             return FALLO;
+        strcat(buffer, inodo.tipo);
+        strcat(buffer, "|");
         if (inodo.permisos & 4)
             strcat(buffer, "r");
         else
@@ -420,11 +426,18 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
             strcat(buffer, "x");
         else
             strcat(buffer, "-");
+        strcat(buffer, "|");
         struct tm *tm; // ver info: struct tm
         tm = localtime(&inodo.mtime);
         sprintf(tmp, "%d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
         strcat(buffer, tmp);
+        strcat(buffer, "|");
+        strcat(buffer, inodo.tamEnBytesLog);
+        strcat(buffer, "|");
+        strcat(buffer, buffer_entradas[i].nombre);
+        strcat(buffer, "|");
     }
+    return n;
 }
 
 /**
