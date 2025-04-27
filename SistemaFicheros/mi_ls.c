@@ -9,13 +9,14 @@ int main(int argc, char const *argv[])
     char buffer[TAMBUFFER];
     char flag, tipo;
     unsigned int total_entradas;
+    int num_token = 1;
 
     if (argc == 3)
     {
         camino = argv[2]; // Simple
         flag = 's';
     }
-    else if (argc == 4)
+    else if (argc == 4 && strcmp(argv[1], "-l") == 0)
     {
         camino = argv[3]; // Long
         flag = 'l';
@@ -29,41 +30,58 @@ int main(int argc, char const *argv[])
     { // Fichero
         tipo = 'f';
         total_entradas = mi_dir(camino, buffer, tipo, flag);
-        
     }
     else
-    {
+    { // Directorio
         tipo = 'd';
         total_entradas = mi_dir(camino, buffer, tipo, flag);
     }
     char *token;
     char separador[] = "|";
+    token = strtok(buffer, separador);
     if (total_entradas > 0)
     {
-        printf("Tipo\tPermisos\tmTime\t\tTamaño\tNombre\n");
-        printf("--------------------------------------------------------------------------------------------\n");
-        if (tipo == 'd')
+        if (flag == 'l') //Formato Long
         {
-            printf("Total: %d\n", total_entradas);
-        }
+            printf("Tipo\tPermisos\tmTime\t\tTamaño\tNombre\n");
+            printf("--------------------------------------------------------------------------------------------\n");
+            if (tipo == 'd') // Solo se imprime si es un directorio
+            {
+                printf("Total: %d\n", total_entradas);
+            }
 
-        token = strtok(buffer, separador);
-        while (token != NULL)
-        {
-            printf("%c\t", token[0]); // Primer campo: tipo
-            token = strtok(NULL, separador);
+            
+            while (token != NULL)
+            {
+                printf("%c\t", token[0]); // Primer campo: tipo
+                token = strtok(NULL, separador);
 
-            printf("%s\t", token); // Segundo campo: permisos
-            token = strtok(NULL, separador);
+                printf("%s\t", token); // Segundo campo: permisos
+                token = strtok(NULL, separador);
 
-            printf("%s\t", token); // Tercer campo: mtime
-            token = strtok(NULL, separador);
+                printf("%s\t", token); // Tercer campo: mtime
+                token = strtok(NULL, separador);
 
-            printf("%s\t", token); // Cuarto campo: tamaño
-            token = strtok(NULL, separador);
+                printf("%s\t", token); // Cuarto campo: tamaño
+                token = strtok(NULL, separador);
 
-            printf("%s\n", token);           // Quinto campo: nombre
-            token = strtok(NULL, separador); // Avanzar a la siguiente entrada
+                printf("%s\n", token);           // Quinto campo: nombre
+                token = strtok(NULL, separador); // Avanzar a la siguiente entrada
+            }
+        } else { // Formato Simple
+            if (tipo == 'd')
+            {
+                printf("Total: %d\n", total_entradas);
+            }
+            while (token!=NULL) {
+                if (num_token % 5 == 0) { //son aquellas posiciones que contienen el nombre, ya que consideremaos que cada 5 posiciones está el nombre.
+                    printf("%s\t", token);
+                }
+                token = strtok(NULL,separador);
+                num_token++;
+            }
+
+
         }
     }
 

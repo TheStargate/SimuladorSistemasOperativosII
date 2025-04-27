@@ -412,6 +412,15 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
 
         if (leer_inodo(buffer_entradas[i].ninodo, &inodo) == FALLO)
             return FALLO;
+        char color[20];
+        if (inodo.tipo == 'd')
+        {                              // Directorio: azul
+            strcpy(color, "\033[34m"); // Azul
+        }
+        else if (inodo.tipo == 'f') // Archivo: verde
+        {
+            strcpy(color, "\033[32m"); // Verde
+        }
         strcat(buffer, inodo.tipo);
         strcat(buffer, "|");
         if (inodo.permisos & 4)
@@ -434,7 +443,9 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         strcat(buffer, "|");
         strcat(buffer, inodo.tamEnBytesLog);
         strcat(buffer, "|");
+        strcat(buffer, color);  // Añadir color
         strcat(buffer, buffer_entradas[i].nombre);
+        strcat(buffer, "\033[0m");  // Resetear color
         strcat(buffer, "|");
     }
     return n;
