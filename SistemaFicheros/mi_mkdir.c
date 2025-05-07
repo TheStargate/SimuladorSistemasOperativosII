@@ -1,6 +1,6 @@
 /*
  * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
- * Descripción: Programa que crea un fichero o directorio,
+ * Descripción: Programa que crea un fichero o directorio
  */
 
 #include "directorios.h"

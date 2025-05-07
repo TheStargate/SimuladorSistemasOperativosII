@@ -15,7 +15,6 @@ int main(int argc, char **argv){
         return FALLO;
     }
     
-    
     char *disco = argv[1];    // Primer argumento: dispositivo virtual
     char *camino = argv[2];   // Segundo argumento: ruta al fichero
 
@@ -29,6 +28,22 @@ int main(int argc, char **argv){
 
     memset(buffer, 0, tam_buf);  // Limpia el buffer
     
+    // Lee el fichero por primera vez
+    leidos = mi_read(camino, buffer, offset, tam_buf);
+
+    // Bucle de lectura mientras haya contenido
+    while (leidos > 0){
+        write(1, buffer, leidos);       // Escribe en salida estándar (1)
+        total_leidos += leidos;         // Acumula bytes leídos
+        offset += tam_buf;              // Avanza el offset
+        memset(buffer, 0, tam_buf);     // Limpia el buffer
+        leidos = mi_read(camino, buffer, offset, tam_buf); // Lee siguiente porción
+    }
+    
+    // Muestra el total de bytes leídos por salida de error (2)
+    printf(string, "\ntotal_leidos %d\n", total_leidos);
+    write(2, string, strlen(string));
+
     // Obtenemos los metadatos del fichero
     int res;
     unsigned int p_inodo_dir = 0, p_inodo, p_entrada;
@@ -38,28 +53,10 @@ int main(int argc, char **argv){
         mostrar_error_buscar_entrada(res);
         return res;
     }
-
-    // Lee el fichero por primera vez
-    leidos = mi_read_f(p_inodo, buffer, offset, tam_buf);
-
-    // Bucle de lectura mientras haya contenido
-    while (leidos > 0){
-        write(1, buffer, leidos);       // Escribe en salida estándar (1)
-        total_leidos += leidos;         // Acumula bytes leídos
-        offset += tam_buf;              // Avanza el offset
-        memset(buffer, 0, tam_buf);     // Limpia el buffer
-        leidos = mi_read_f(p_inodo, buffer, offset, tam_buf); // Lee siguiente porción
-    }
-    
-    // Muestra el total de bytes leídos por salida de error (2)
-    sprintf(string, "\ntotal_leidos %d\n", total_leidos);
-    write(2, string, strlen(string));
-
-    
     leer_inodo(p_inodo, &inodo);  // Lee los metadatos del inodo
 
     // Muestra el tamaño lógico del fichero
-    sprintf(string, "tamEnBytesLog %d\n", inodo.tamEnBytesLog);
+    printf(string, "tamEnBytesLog %d\n", inodo.tamEnBytesLog);
     write(2, string, strlen(string));
     
     bumount();  // Desmonta el dispositivo
