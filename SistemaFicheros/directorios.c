@@ -293,71 +293,8 @@ int mi_creat(const char *camino, unsigned char permisos)
     unsigned int p_inodo;
     unsigned int p_entrada;
 
-    if (buscar_entrada(camino, 0, &p_inodo, &p_entrada, 1, permisos) == FALLO)
-    {
-        return FALLO;
-    }
-    return EXITO;
+    return buscar_entrada(camino, 0, &p_inodo, &p_entrada, 1, permisos) ;
 }
-
-/**
- * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
- * (el nombre de cada entrada puede venir separado por '|' o por un tabulador) y devuelve el número de entradas.
- * Implica leer de forma secuencial el contenido de un inodo de tipo directorio, con mi_read_f() leyendo sus entradas.
- * Buscamos la entrada correspondiente a *camino para comprobar que existe y leemos su inodo, comprobando que se trata
- * de un directorio y que tiene permisos de lectura. Para cada entrada concatenamos (mediante la función strcat())
- * su nombre al buffer con un separador.
- *
- * @param camino Cadena de caracteres que contiene el camino a mostrar
- * @param buffer Buffer de memoria donde se almacenará el contenido del directorio
- * @return Número de entradas leídas, o -1 si ha habido un error.
- */
-// int mi_dir(const char *camino, char *buffer)
-//{
-// }
-
-/**
- * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
- * (el nombre de cada entrada puede venir separado por '|' o por un tabulador) y devuelve el número de entradas.
- * Implica leer de forma secuencial el contenido de un inodo de tipo directorio, con mi_read_f() leyendo sus entradas.
- * Buscamos la entrada correspondiente a *camino para comprobar que existe y leemos su inodo, comprobando que se trata
- * de un directorio y que tiene permisos de lectura. Para cada entrada concatenamos (mediante la función strcat())
- * su nombre al buffer con un separador.
- *
- * Si queremos ampliar la utilidad de mi_dir() para aplicarla también a ficheros, podemos añadir un parámetro que
- * indique el tipo y que nos lo pasará mi_ls.c, para luego poder comparar la sintaxis con el tipo real del inodo
- * que obtendremos al leer el inodo.
- *
- * @param camino Cadena de caracteres que contiene el camino a mostrar
- * @param buffer Buffer de memoria donde se almacenará el contenido del directorio
- * @param tipo Tipo de entrada ('d' para directorio, 'f' para fichero)
- * @return Número de entradas leídas, o -1 si ha habido un error.
- */
-// int mi_dir(const char *camino, char *buffer, char tipo)
-//{
-// }
-
-/**
- * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
- * (el nombre de cada entrada puede venir separado por '|' o por un tabulador) y devuelve el número de entradas.
- * Implica leer de forma secuencial el contenido de un inodo de tipo directorio, con mi_read_f() leyendo sus entradas.
- * Buscamos la entrada correspondiente a *camino para comprobar que existe y leemos su inodo, comprobando que se trata
- * de un directorio y que tiene permisos de lectura. Para cada entrada concatenamos (mediante la función strcat())
- * su nombre al buffer con un separador.
- *
- * Si queremos ampliar la utilidad de mi_dir() para que muestre el listado simple o el extendido (long)
- * según si se usa la opción -l o no en el comando, podemos añadir un parámetro flag, que nos lo pasará
- * mi_ls.c, para luego construir/mostrar un tipo u otro de listado.
- *
- * @param camino Cadena de caracteres que contiene el camino a mostrar
- * @param buffer Buffer de memoria donde se almacenará el contenido del directorio
- * @param tipo Tipo de entrada ('d' para directorio, 'f' para fichero)
- * @param flag Indica si se debe mostrar el listado simple o extendido
- * @return Número de entradas leídas, o -1 si ha habido un error.
- */
-// int mi_dir(const char *camino, char *buffer, char flag)
-//{
-// }
 
 /**
  * Función de la capa de directorios que pone el contenido del directorio en un buffer de memoria
@@ -409,7 +346,6 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     memset(buffer, 0, sizeof(buffer));
     for (int i = 0; i < n; i++)
     {
-
         if (leer_inodo(buffer_entradas[i].ninodo, &inodo) == FALLO)
             return FALLO;
         char color[20];

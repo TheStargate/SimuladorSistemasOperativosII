@@ -23,6 +23,7 @@ int main(int argc, char const *argv[])
     }
     else
     {
+        fprintf(stderr, RED "Número de argumentos incorrecto. Sintaxis: ./mi_ls <disco> </ruta> o ./mi_ls -l <disco> </ruta>\n" RESET);
         return FALLO;
     }
 
