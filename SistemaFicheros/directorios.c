@@ -398,6 +398,16 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
  */
 int mi_chmod(const char *camino, unsigned char permisos)
 {
+    unsigned int p_inodo;
+    unsigned int p_entrada;
+    // He puesto 0, pero por ahora. Tengo que verificar como se sacar el inodo padre.
+    if (buscar_entrada(camino,0, &p_inodo, &p_entrada, 0, permisos ) == FALLO) {
+        return FALLO;
+    }
+    return mi_chmod_f(p_inodo, permisos);
+        
+    
+
 }
 
 /**
