@@ -338,12 +338,12 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         return FALLO;
     }
     struct entrada buffer_entradas[BLOCKSIZE / sizeof(struct entrada)];
-    memset(buffer_entradas, 0, BLOCKSIZE / sizeof(struct entrada));
+    memset(buffer_entradas, 0, sizeof(buffer_entradas));
     int nbytes_leidos = mi_read_f(p_inodo, buffer_entradas, 0, inodo.tamEnBytesLog);
     if (nbytes_leidos == FALLO)
         return FALLO;
     int n = nbytes_leidos / sizeof(struct entrada);
-    memset(buffer, 0, sizeof(buffer));
+    memset(buffer, 0, sizeof(*buffer));
     for (int i = 0; i < n; i++)
     {
         if (leer_inodo(buffer_entradas[i].ninodo, &inodo) == FALLO)
@@ -357,7 +357,8 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         {
             strcpy(color, "\033[32m"); // Verde
         }
-        strcat(buffer, inodo.tipo);
+        sprintf(tmp, "%c", inodo.tipo);
+        strcat(buffer, tmp); 
         strcat(buffer, "|");
         if (inodo.permisos & 4)
             strcat(buffer, "r");
@@ -378,7 +379,9 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         sprintf(tmp, "%d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
         strcat(buffer, tmp);
         strcat(buffer, "|");
-        strcat(buffer, inodo.tamEnBytesLog);
+
+        sprintf(tmp, "%u", inodo.tamEnBytesLog);
+        strcat(buffer, tmp);
         strcat(buffer, "|");
         strcat(buffer, color); // Añadir color
         strcat(buffer, buffer_entradas[i].nombre);
@@ -512,7 +515,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
 {
     unsigned int p_inodo_dir = 0;  // Puntero al inodo del directorio padre
     unsigned int p_inodo, p_entrada; // Punteros al inodo y entrada encontrados
-    struct inodo inodo;           // Estructura para almacenar el inodo encontrado
+    //struct inodo inodo;           // Estructura para almacenar el inodo encontrado
 
     if(strcmp(camino, UltimaEntradaEscritura.camino) == 0)
     {
@@ -536,10 +539,10 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
         UltimaEntradaEscritura.p_inodo = p_inodo;
     }
 
-    int leidos; // Variable para almacenar el número de bytes leídos
+    int leidos = mi_read_f(p_inodo, buf, offset, nbytes); // Variable para almacenar el número de bytes leídos
 
     // Leemos el inodo del fichero donde queremos leer
-    if(leidos = mi_read_f(p_inodo, buf, offset, nbytes) < 0)
+    if(leidos < 0)
     {
         return FALLO;
     }

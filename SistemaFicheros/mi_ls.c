@@ -3,7 +3,7 @@
  * Descripción: Programa que lista el contenido de un directorio
  */
 
-#include <directorios.h>
+#include "directorios.h"
 #define TAMFILA 100
 #define TAMBUFFER (TAMFILA * 1000)
 

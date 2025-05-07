@@ -22,15 +22,14 @@ int main(int argc, char **argv)
 
     // Le pasamos por parámetro la ruta (*camino) y los permisos pasados a ints.
     int permisos = atoi(argv[2]);
+    const char *camino = argv[3];
+    
     if (permisos < 0 || permisos > 7)
     {
         bumount();
         return FALLO; // Comprobamos rango adecuado.
     }
     
-    int permisos = argv[2];
-    const char *camino = argv[3];
-
     mi_chmod(camino, permisos);
     
     bumount();
