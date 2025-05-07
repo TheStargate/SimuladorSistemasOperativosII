@@ -293,7 +293,7 @@ int mi_creat(const char *camino, unsigned char permisos)
     unsigned int p_inodo;
     unsigned int p_entrada;
 
-    return buscar_entrada(camino, 0, &p_inodo, &p_entrada, 1, permisos) ;
+    return buscar_entrada(camino, 0, &p_inodo, &p_entrada, 1, permisos);
 }
 
 /**
@@ -372,7 +372,7 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         else
             strcat(buffer, "-");
         strcat(buffer, "|");
-        
+
         struct tm *tm;
         tm = localtime(&inodo.mtime);
         sprintf(tmp, "%d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
@@ -380,9 +380,9 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         strcat(buffer, "|");
         strcat(buffer, inodo.tamEnBytesLog);
         strcat(buffer, "|");
-        strcat(buffer, color);  // Añadir color
+        strcat(buffer, color); // Añadir color
         strcat(buffer, buffer_entradas[i].nombre);
-        strcat(buffer, "\033[0m");  // Resetear color
+        strcat(buffer, "\033[0m"); // Resetear color
         strcat(buffer, "|");
     }
     return n;
@@ -401,13 +401,11 @@ int mi_chmod(const char *camino, unsigned char permisos)
     unsigned int p_inodo;
     unsigned int p_entrada;
     // He puesto 0, pero por ahora. Tengo que verificar como se sacar el inodo padre.
-    if (buscar_entrada(camino,0, &p_inodo, &p_entrada, 0, permisos ) == FALLO) {
+    if (buscar_entrada(camino, 0, &p_inodo, &p_entrada, 0, permisos) == FALLO)
+    {
         return FALLO;
     }
     return mi_chmod_f(p_inodo, permisos);
-        
-    
-
 }
 
 /**
@@ -420,4 +418,131 @@ int mi_chmod(const char *camino, unsigned char permisos)
  */
 int mi_stat(const char *camino, struct STAT *p_stat)
 {
+    unsigned int p_inodo;
+    unsigned int p_entrada;
+    // He puesto 0, pero por ahora. Tengo que verificar como se sacar el inodo padre.
+    if (buscar_entrada(camino, 0, &p_inodo, &p_entrada, 0, p_stat->permisos) == FALLO)
+    {
+        return FALLO;
+    }
+    return mi_stat_f(p_inodo, p_stat);
+}
+
+static struct UltimaEntrada UltimaEntradaEscritura;
+
+/**
+ * Función de directorios.c para escribir contenido en un fichero. Buscaremos
+ * la entrada camino con buscar_entrada() para obtener el p_inodo. Si la entrada
+ * existe llamamos a la función correspondiente de ficheros.c pasándole el p_inodo
+ *
+ * @param camino Cadena de caracteres que contiene el camino a modificar
+ * @param buf Buffer de memoria donde se almacenará el contenido a escribir
+ * @param offset Desplazamiento para escritura
+ * @param nbytes Número de bytes a escribir
+ * @return EXITO si se ha modificado correctamente, FALLO si ha habido algún error.
+ */
+int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes)
+{
+    unsigned int p_inodo_dir = 0;  // Puntero al inodo del directorio padre
+    unsigned int p_inodo, p_entrada; // Punteros al inodo y entrada encontrados
+    struct inodo inodo;           // Estructura para almacenar el inodo encontrado
+
+    // Comprobamos si el camino es el mismo que el de la última escritura (caché)
+    if (strcmp(camino, UltimaEntradaEscritura.camino) == 0)
+    {
+        // Si coincide, usamos el inodo almacenado en la caché
+        p_inodo = UltimaEntradaEscritura.p_inodo;
+    }
+    else
+    {
+        int res; // Variable para almacenar el resultado de buscar_entrada
+
+        // Buscamos la entrada en el sistema de ficheros
+        if( (res = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7)) < 0)
+        {
+            // Si hay error, lo mostramos y devolvemos el código de error
+            mostrar_error_buscar_entrada(res);
+            return res;
+        }
+
+        // Actualizamos la caché con la nueva entrada encontrada
+        strcpy(UltimaEntradaEscritura.camino, camino);
+        UltimaEntradaEscritura.p_inodo = p_inodo;
+    }
+
+    // Leemos el inodo del fichero donde queremos escribir
+    if (leer_inodo(p_inodo, &inodo) == FALLO)
+    {
+        return FALLO;
+    }
+
+    // Comprobamos que el inodo no sea un directorio
+    if (inodo.tipo == 'd')
+    {
+        fprintf(stderr, "Error: No se puede escribir en un directorio.\n");
+        return FALLO;
+    }
+
+    int escritos; // Variable para almacenar el número de bytes escritos
+    
+    // Escribimos los datos en el fichero usando mi_write_f
+    if ((escritos = mi_write_f(p_inodo, buf, offset, nbytes)) < 0)
+    {
+        return FALLO;
+    }
+
+    // Devolvemos el número de bytes escritos correctamente
+    return escritos;
+}
+
+
+/**
+ * Función de directorios.c para leer los nbytes del fichero indicado por camino, 
+ * a partir del offset pasado por parámetro y copiarlos en el buffer buf. Buscaremos 
+ * la entrada camino con buscar_entrada() para obtener el p_inodo. Si la entrada existe
+ * llamamos a la función correspondiente de ficheros.c pasándole el p_inodo
+ * 
+ * @param camino Cadena de caracteres que contiene el camino a modificar
+ * @param buf Buffer de memoria donde se almacenará el contenido a leer
+ * @param offset Desplazamiento para lectura
+ * @param nbytes Número de bytes a leer
+ * @return EXITO si se ha modificado correctamente, FALLO si ha habido algún error.
+ */
+int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes)
+{
+    unsigned int p_inodo_dir = 0;  // Puntero al inodo del directorio padre
+    unsigned int p_inodo, p_entrada; // Punteros al inodo y entrada encontrados
+    struct inodo inodo;           // Estructura para almacenar el inodo encontrado
+
+    if(strcmp(camino, UltimaEntradaEscritura.camino) == 0)
+    {
+        // Si coincide, usamos el inodo almacenado en la caché
+        p_inodo = UltimaEntradaEscritura.p_inodo;
+    }
+    else
+    {
+        int res; // Variable para almacenar el resultado de buscar_entrada
+
+        // Buscamos la entrada en el sistema de ficheros
+        if( (res = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7)) < 0)
+        {
+            // Si hay error, lo mostramos y devolvemos el código de error
+            mostrar_error_buscar_entrada(res);
+            return res;
+        }
+
+        // Actualizamos la caché con la nueva entrada encontrada
+        strcpy(UltimaEntradaEscritura.camino, camino);
+        UltimaEntradaEscritura.p_inodo = p_inodo;
+    }
+
+    int leidos; // Variable para almacenar el número de bytes leídos
+
+    // Leemos el inodo del fichero donde queremos leer
+    if(leidos = mi_read_f(p_inodo, buf, offset, nbytes) < 0)
+    {
+        return FALLO;
+    }
+    
+    return leidos;
 }

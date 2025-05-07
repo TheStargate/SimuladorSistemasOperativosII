@@ -1,3 +1,7 @@
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Programa que lista el contenido de un directorio
+ */
 
 #include <directorios.h>
 #define TAMFILA 100

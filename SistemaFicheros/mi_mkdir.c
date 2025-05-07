@@ -1,9 +1,15 @@
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Programa que crea un fichero o directorio,
+ */
+
 #include "directorios.h"
 
 int main(int argc, char const *argv[])
 {
-    if (argc != 4) // Escriben más o menos cosas de las que deberían por consola.
+    if (argc != 4)
     {
+        fprintf(stderr, RED "Número de argumentos incorrecto. Sintaxis: ./mi_mkdir <disco> <permisos> </ruta>\n" RESET);
         return FALLO;
     }
 
