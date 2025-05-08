@@ -12,7 +12,7 @@
 #define DEBUGN4 0
 #define DEBUGN5 0
 #define DEBUGN6 0
-#define DEBUGN7 0
+#define DEBUGN7 1
 #define DEBUGN8 1
 
 #define posSB 0 // el superbloque se escribe en el primer bloque de nuestro FS

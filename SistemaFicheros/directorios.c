@@ -290,10 +290,11 @@ void mostrar_error_buscar_entrada(int error)
 int mi_creat(const char *camino, unsigned char permisos)
 {
 
-    unsigned int p_inodo;
-    unsigned int p_entrada;
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
 
-    return buscar_entrada(camino, 0, &p_inodo, &p_entrada, 1, permisos);
+    return buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 1, permisos);
 }
 
 /**
@@ -401,10 +402,12 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
  */
 int mi_chmod(const char *camino, unsigned char permisos)
 {
-    unsigned int p_inodo;
-    unsigned int p_entrada;
-    // He puesto 0, pero por ahora. Tengo que verificar como se sacar el inodo padre.
-    if (buscar_entrada(camino, 0, &p_inodo, &p_entrada, 0, permisos) == FALLO)
+
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+
+    if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, permisos) == FALLO)
     {
         return FALLO;
     }
@@ -421,13 +424,17 @@ int mi_chmod(const char *camino, unsigned char permisos)
  */
 int mi_stat(const char *camino, struct STAT *p_stat)
 {
-    unsigned int p_inodo;
-    unsigned int p_entrada;
-    // He puesto 0, pero por ahora. Tengo que verificar como se sacar el inodo padre.
-    if (buscar_entrada(camino, 0, &p_inodo, &p_entrada, 0, p_stat->permisos) == FALLO)
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+
+    if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, p_stat->permisos) == FALLO)
     {
         return FALLO;
     }
+    
+    fprintf(stderr, BLUE "\nNº de inodo: %d\n" RESET, p_inodo);
+
     return mi_stat_f(p_inodo, p_stat);
 }
 
@@ -461,7 +468,12 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
         int res; // Variable para almacenar el resultado de buscar_entrada
 
         // Buscamos la entrada en el sistema de ficheros
-        if( (res = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7)) < 0)
+        if( (res = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7)) == FALLO)
+        {
+            // Si hay error, lo mostramos y devolvemos el código de error
+            mostrar_error_buscar_entrada(res);
+            return res;
+        }
         {
             // Si hay error, lo mostramos y devolvemos el código de error
             mostrar_error_buscar_entrada(res);
@@ -489,7 +501,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     int escritos; // Variable para almacenar el número de bytes escritos
     
     // Escribimos los datos en el fichero usando mi_write_f
-    if ((escritos = mi_write_f(p_inodo, buf, offset, nbytes)) < 0)
+    if ((escritos = mi_write_f(p_inodo, buf, offset, nbytes)) == FALLO)
     {
         return FALLO;
     }
@@ -527,7 +539,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
         int res; // Variable para almacenar el resultado de buscar_entrada
 
         // Buscamos la entrada en el sistema de ficheros
-        if( (res = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7)) < 0)
+        if( (res = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7)) == FALLO)
         {
             // Si hay error, lo mostramos y devolvemos el código de error
             mostrar_error_buscar_entrada(res);
@@ -548,4 +560,29 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     }
     
     return leidos;
+}
+
+/**
+ * Crea el enlace de una entrada de directorio camino2 al inodo especificado por otra entrada de directorio camino1.
+ * 
+ * @param camino1 Cadena de caracteres que contiene el camino del inodo
+ * @param camino2 Cadena de caracteres que contiene el camino del enlace
+ * @return EXITO si se ha creado correctamente, FALLO si ha habido algún error.
+ */
+int mi_link(const char *camino1, const char *camino2) {
+
+}
+
+/**
+ * Función de la capa de directorios que borra la entrada de directorio especificada
+ * (no hay que olvidar actualizar la cantidad de enlaces en el inodo) y, en caso de que
+ * fuera el último enlace existente, borrar el propio fichero/directorio. Es decir tanto
+ * para borrar un enlace a un fichero como para eliminar un fichero o directorio que no
+ * contenga enlaces.
+ * 
+ * @param camino Cadena de caracteres que contiene el camino a eliminar
+ * @return EXITO si se ha eliminado correctamente, FALLO si ha habido algún error.
+ */
+int mi_unlink(const char *camino) {
+    
 }

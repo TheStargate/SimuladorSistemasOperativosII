@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     bmount(disco);
         
     // Intentamos escribir el texto en el fichero especificado
-    if ((escritos = mi_write(camino, buffer, offset, nbytes)) < 0) {
+    if ((escritos = mi_write(camino, buffer, offset, nbytes)) == FALLO) {
         fprintf(stderr, "Error de escritura en el fichero\n");
         return -1;
     }

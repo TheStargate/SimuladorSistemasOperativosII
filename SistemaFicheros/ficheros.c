@@ -237,6 +237,8 @@ int mi_stat_f(unsigned int ninodo, struct STAT *p_stat)
     p_stat->tamEnBytesLog = inodo.tamEnBytesLog;
     p_stat->tipo = inodo.tipo;
 
+    
+
     return EXITO;
 }
 

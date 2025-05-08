@@ -18,7 +18,7 @@ int main(int argc, char **argv){
     char *disco = argv[1];    // Primer argumento: dispositivo virtual
     char *camino = argv[2];   // Segundo argumento: ruta al fichero
 
-    if (camino[strlen(camino)-1] != '/'){ //No es un fichero.
+    if (camino[strlen(camino)-1] != '/'){ // No es un fichero.
         return FALLO;
     }
     bmount(disco);  // Monta el dispositivo virtual especificado
@@ -49,7 +49,7 @@ int main(int argc, char **argv){
     unsigned int p_inodo_dir = 0, p_inodo, p_entrada;
     
     // Busca la entrada del fichero para obtener su inodo
-    if ((res = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7)) < 0){
+    if ((res = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7)) == FALLO){
         mostrar_error_buscar_entrada(res);
         return res;
     }
