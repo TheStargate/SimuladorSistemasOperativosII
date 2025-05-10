@@ -45,11 +45,19 @@ int main(int argc, char const *argv[])
     { // Fichero
         tipo = 'f';
         total_entradas = mi_dir(camino, buffer, tipo, flag);
+        if (total_entradas == -1) {
+            bumount();
+            return FALLO;
+        }
     }
     else
     { // Directorio
         tipo = 'd';
         total_entradas = mi_dir(camino, buffer, tipo, flag);
+        if (total_entradas == -1) {
+            bumount();
+            return FALLO;
+        }
     }
     char *token;
     char separador[] = "|";
