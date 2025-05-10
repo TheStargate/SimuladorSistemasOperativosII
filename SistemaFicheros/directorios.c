@@ -315,12 +315,13 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     // Nos pasan un camino.
     // Con buscar entrada obtenemos le valor del inodo
     // Luego con mi_read_f, obtenemos info de un inodo pasado por parametro y lo guardamos en un buffer.
-    unsigned int p_inodo;
-    unsigned int p_entrada;
-    unsigned char permisos;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+    unsigned int p_inodo_dir = 0;
+    unsigned char permisos = 4;
     char tmp[64];
 
-    if (buscar_entrada(camino, 0, &p_inodo, &p_entrada, 0, permisos) == FALLO)
+    if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, permisos) == FALLO)
     {
         return FALLO;
     }
