@@ -18,11 +18,11 @@ int main(int argc, char const *argv[])
     {
         return FALLO;
     }
-    if (bmount(camino) == FALLO)
+    if (bmount(argv[1]) == FALLO)
     {
         bumount();
         return FALLO;
-    }
+    } 
 
     if (mi_creat(camino, permisos) == FALLO)
     {
@@ -30,5 +30,5 @@ int main(int argc, char const *argv[])
         return FALLO;
     }
 
-    return 0;
+   return 0;
 }
