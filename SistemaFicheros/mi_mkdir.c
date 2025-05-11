@@ -1,6 +1,6 @@
 /*
  * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
- * Descripción: Programa que crea un fichero o directorio
+ * Descripción: Programa que crea un directorio
  */
 
 #include "directorios.h"
@@ -23,6 +23,7 @@ int main(int argc, char const *argv[])
     int permisos = atoi(argv[2]);
     if (permisos < 0 || permisos > 7)
     {
+        fprintf(stderr, RED "Error: modo inválido: <<%d>>\n" RESET, permisos);
         bumount();
         return FALLO; // Comprobamos rango adecuado.
     }

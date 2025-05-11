@@ -59,6 +59,7 @@ int main(int argc, char const *argv[])
             return FALLO;
         }
     }
+
     char *token;
     char separador[] = "|";
     token = strtok(buffer, separador);
@@ -73,7 +74,7 @@ int main(int argc, char const *argv[])
             printf("Tipo\tPermisos\tmTime\t\tTamaño\tNombre\n");
             printf("--------------------------------------------------------------------------------------------\n");
             
-
+            
             
             while (token != NULL)
             {
