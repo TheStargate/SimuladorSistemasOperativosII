@@ -347,13 +347,16 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     struct entrada buffer_entradas[BLOCKSIZE / sizeof(struct entrada)];
     memset(buffer_entradas, 0, sizeof(buffer_entradas));
     int n;
-    
-    if (inodo.tipo == 'f') {
+
+    if (inodo.tipo == 'f')
+    {
         // Simular una sola entrada si es un fichero
         if (mi_read_f(p_inodo_dir, buffer_entradas, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
             return FALLO;
         n = 1;
-    } else {
+    }
+    else
+    {
         int nbytes_leidos = mi_read_f(p_inodo, buffer_entradas, 0, inodo.tamEnBytesLog);
         if (nbytes_leidos == FALLO)
             return FALLO;
@@ -453,7 +456,11 @@ int mi_stat(const char *camino, struct STAT *p_stat)
     return mi_stat_f(p_inodo, p_stat);
 }
 
-static struct UltimaEntrada UltimaEntradaEscritura;
+// Guarda las últimas entradas para escritura (caché LRU)
+static struct UltimaEntrada UltimasEntradasE[CACHE_SIZE];
+
+// Guarda las últimas entradas para lectura (caché LRU)
+static struct UltimaEntrada UltimasEntradasL[CACHE_SIZE];
 
 /**
  * Función de directorios.c para escribir contenido en un fichero. Buscaremos
@@ -464,65 +471,75 @@ static struct UltimaEntrada UltimaEntradaEscritura;
  * @param buf Buffer de memoria donde se almacenará el contenido a escribir
  * @param offset Desplazamiento para escritura
  * @param nbytes Número de bytes a escribir
- * @return EXITO si se ha modificado correctamente, FALLO si ha habido algún error.
+ * @return Número de bytes escritos
  */
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes)
 {
-    unsigned int p_inodo_dir = 0;    // Puntero al inodo del directorio padre
-    unsigned int p_inodo, p_entrada; // Punteros al inodo y entrada encontrados
-    struct inodo inodo;              // Estructura para almacenar el inodo encontrado
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+    int bytesEscritos;
+    int entradaEnCache = FALLO;
 
-    // Comprobamos si el camino es el mismo que el de la última escritura (caché)
-    if (strcmp(camino, UltimaEntradaEscritura.camino) == 0)
+    // Comprobamos si encontramos el camino actual en la caché
+    for (int i = 0; i < CACHE_SIZE; i++)
     {
-        // Si coincide, usamos el inodo almacenado en la caché
-        p_inodo = UltimaEntradaEscritura.p_inodo;
+        if (strcmp(UltimasEntradasE[i].camino, camino) == 0)
+        {
+            // Si coincide, usamos el inodo almacenado en la caché
+            p_inodo = UltimasEntradasE[i].p_inodo;
+
+            // Actualizar tiempo de acceso
+            gettimeofday(&UltimasEntradasE[i].ultima_consulta, NULL);
+
+            entradaEnCache = EXITO;
+        }
+    }
+
+    if (entradaEnCache == FALLO)
+    {
+        // Si no está en la caché, buscamos la entrada del camino a modificar
+        if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+        {
+            return FALLO;
+        }
+
+        // Actualizamos la caché LRU con la nueva entrada encontrada
+#if DEBUGN9
+        fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]\n" RESET);
+#endif
+
+        struct timeval tiempoActual;
+        gettimeofday(&tiempoActual, NULL);
+
+        // Buscar la entrada usada hace más tiempo para substituirla
+        int lru_index = 0;
+        for (int i = 1; i < CACHE_SIZE; i++)
+        {
+            if (timercmp(&UltimasEntradasE[i].ultima_consulta, &UltimasEntradasE[lru_index].ultima_consulta, <))
+            {
+                lru_index = i;
+            }
+        }
+
+        strcpy(UltimasEntradasE[lru_index].camino, camino);
+        UltimasEntradasE[lru_index].p_inodo = p_inodo;
+        UltimasEntradasE[lru_index].ultima_consulta = tiempoActual;
     }
     else
     {
-        int res; // Variable para almacenar el resultado de buscar_entrada
-
-        // Buscamos la entrada en el sistema de ficheros
-        if ((res = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7)) == FALLO)
-        {
-            // Si hay error, lo mostramos y devolvemos el código de error
-            mostrar_error_buscar_entrada(res);
-            return res;
-        }
-        {
-            // Si hay error, lo mostramos y devolvemos el código de error
-            mostrar_error_buscar_entrada(res);
-            return res;
-        }
-
-        // Actualizamos la caché con la nueva entrada encontrada
-        strcpy(UltimaEntradaEscritura.camino, camino);
-        UltimaEntradaEscritura.p_inodo = p_inodo;
+#if DEBUGN9
+        fprintf(stderr, BLUE "[mi_write() → Utilizamos la caché de escritura en vez de llamar a buscar_entrada()]\n" RESET);
+#endif
     }
 
-    // Leemos el inodo del fichero donde queremos escribir
-    if (leer_inodo(p_inodo, &inodo) == FALLO)
+    // Escribimos los datos en el fichero
+    if ((bytesEscritos = mi_write_f(p_inodo, buf, offset, nbytes)) == FALLO)
     {
         return FALLO;
     }
 
-    // Comprobamos que el inodo no sea un directorio
-    if (inodo.tipo == 'd')
-    {
-        fprintf(stderr, "Error: No se puede escribir en un directorio.\n");
-        return FALLO;
-    }
-
-    int escritos; // Variable para almacenar el número de bytes escritos
-
-    // Escribimos los datos en el fichero usando mi_write_f
-    if ((escritos = mi_write_f(p_inodo, buf, offset, nbytes)) == FALLO)
-    {
-        return FALLO;
-    }
-
-    // Devolvemos el número de bytes escritos correctamente
-    return escritos;
+    return bytesEscritos;
 }
 
 /**
@@ -535,45 +552,75 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
  * @param buf Buffer de memoria donde se almacenará el contenido a leer
  * @param offset Desplazamiento para lectura
  * @param nbytes Número de bytes a leer
- * @return EXITO si se ha modificado correctamente, FALLO si ha habido algún error.
+ * @return Número de bytes leídos.
  */
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes)
 {
-    unsigned int p_inodo_dir = 0;    // Puntero al inodo del directorio padre
-    unsigned int p_inodo, p_entrada; // Punteros al inodo y entrada encontrados
-    // struct inodo inodo;           // Estructura para almacenar el inodo encontrado
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+    int bytesLeidos;
+    int entradaEnCache = FALLO;
 
-    if (strcmp(camino, UltimaEntradaEscritura.camino) == 0)
+    // Comprobamos si encontramos el camino actual en la caché
+    for (int i = 0; i < CACHE_SIZE; i++)
     {
-        // Si coincide, usamos el inodo almacenado en la caché
-        p_inodo = UltimaEntradaEscritura.p_inodo;
+        if (strcmp(UltimasEntradasL[i].camino, camino) == 0)
+        {
+            // Si coincide, usamos el inodo almacenado en la caché
+            p_inodo = UltimasEntradasL[i].p_inodo;
+
+            // Actualizar tiempo de acceso
+            gettimeofday(&UltimasEntradasL[i].ultima_consulta, NULL);
+
+            entradaEnCache = EXITO;
+        }
+    }
+
+    if (entradaEnCache == FALLO)
+    {
+        // Si no está en la caché, buscamos la entrada del camino a modificar
+        if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+        {
+            return FALLO;
+        }
+
+// Actualizamos la caché LRU con la nueva entrada encontrada
+#if DEBUGN9
+        fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]\n" RESET);
+#endif
+
+        struct timeval tiempoActual;
+        gettimeofday(&tiempoActual, NULL);
+
+        // Buscar la entrada usada hace más tiempo para substituirla
+        int lru_index = 0;
+        for (int i = 1; i < CACHE_SIZE; i++)
+        {
+            if (timercmp(&UltimasEntradasL[i].ultima_consulta, &UltimasEntradasL[lru_index].ultima_consulta, <))
+            {
+                lru_index = i;
+            }
+        }
+
+        strcpy(UltimasEntradasL[lru_index].camino, camino);
+        UltimasEntradasL[lru_index].p_inodo = p_inodo;
+        UltimasEntradasL[lru_index].ultima_consulta = tiempoActual;
     }
     else
     {
-        int res; // Variable para almacenar el resultado de buscar_entrada
-
-        // Buscamos la entrada en el sistema de ficheros
-        if ((res = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7)) == FALLO)
-        {
-            // Si hay error, lo mostramos y devolvemos el código de error
-            mostrar_error_buscar_entrada(res);
-            return res;
-        }
-
-        // Actualizamos la caché con la nueva entrada encontrada
-        strcpy(UltimaEntradaEscritura.camino, camino);
-        UltimaEntradaEscritura.p_inodo = p_inodo;
+#if DEBUGN9
+  fprintf(stderr, BLUE "\n[mi_read() → Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n" RESET);
+#endif
     }
 
-    int leidos = mi_read_f(p_inodo, buf, offset, nbytes); // Variable para almacenar el número de bytes leídos
-
-    // Leemos el inodo del fichero donde queremos leer
-    if (leidos < 0)
+    // Escribimos los datos en el fichero
+    if ((bytesLeidos = mi_read_f(p_inodo, buf, offset, nbytes)) == FALLO)
     {
         return FALLO;
     }
 
-    return leidos;
+    return bytesLeidos;
 }
 
 /**

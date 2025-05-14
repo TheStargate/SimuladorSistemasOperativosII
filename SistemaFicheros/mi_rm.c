@@ -31,7 +31,5 @@ int main (int argc, char **argv) {
 
     // Desmontamos el disco
     bumount();
-
-    return TRUE;
     
 }

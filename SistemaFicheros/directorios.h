@@ -3,20 +3,32 @@
  */
 
 #include "ficheros.h"
+#include <sys/time.h>
 
-#define TAMNOMBRE 60 // tamaño del nombre de directorio o fichero, en Ext2 = 256
-#define PROFUNDIDAD 32 //profundidad máxima del árbol de directorios
+#define TAMNOMBRE 60   // tamaño del nombre de directorio o fichero, en Ext2 = 256
+#define PROFUNDIDAD 32 // profundidad máxima del árbol de directorios
 struct entrada
 {
-    char nombre[TAMNOMBRE];
-    unsigned int ninodo;
+  char nombre[TAMNOMBRE];
+  unsigned int ninodo;
 };
 
-struct UltimaEntrada{
-    char camino [TAMNOMBRE*PROFUNDIDAD];
-    int p_inodo;
-  };
-  
+#define USARCACHE 3  // 0:sin caché, 1: última L/E, 2:tabla FIFO, 3:tabla LRU
+#define CACHE_SIZE 3 // Tamaño de caché para las entradas
+
+struct UltimaEntrada
+{
+  char camino[TAMNOMBRE * PROFUNDIDAD];
+  int p_inodo;
+#if USARCACHE == 3 // tabla LRU
+  struct timeval ultima_consulta;
+#endif
+};
+// tabla caché directorios
+#if (USARCACHE == 2 || USARCACHE == 3)
+#define CACHE_SIZE 3 // cantidad de entradas para la caché
+#endif
+
 #define ERROR_CAMINO_INCORRECTO (-2)
 #define ERROR_PERMISO_LECTURA (-3)
 #define ERROR_NO_EXISTE_ENTRADA_CONSULTA (-4)
@@ -39,4 +51,3 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
 
 int mi_link(const char *camino1, const char *camino2);
 int mi_unlink(const char *camino);
-

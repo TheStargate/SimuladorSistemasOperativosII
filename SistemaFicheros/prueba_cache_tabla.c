@@ -1,3 +1,6 @@
+//Programa prueba_cache_tabla.c para testear las cachés de directorios > 1
+//Sintaxis:  prueba_cache_tabla <nombre_dispositivo> <texto> 
+
 #include "directorios.h"
 
 int main(int argc, char **argv)

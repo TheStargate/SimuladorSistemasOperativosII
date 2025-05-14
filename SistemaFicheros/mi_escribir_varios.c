@@ -1,3 +1,5 @@
+//Programa para testear las cachés de directorios de 1 última L y 1 última E
+
 #include "directorios.h"
 
 int main(int argc, char **argv)
