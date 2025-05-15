@@ -123,40 +123,33 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
     {
 
         // MEJORA BUFFER ENTRADAS
-
-        // Leer el primer bloque de entradas
-        if (mi_read_f(*p_inodo_dir, entradas, num_entrada_inodo * sizeof(struct entrada), BLOCKSIZE) == FALLO)
-        {
-            mostrar_error_buscar_entrada(ERROR_PERMISO_LECTURA);
-            return FALLO;
-        }
+        int bloque_actual = 0;
+        int entrada_encontrada = 0;
 
         // Buscar la entrada en el bloque leído
-        while (num_entrada_inodo < cant_entradas_inodo)
+        while (num_entrada_inodo < cant_entradas_inodo && !entrada_encontrada)
         {
-            // Iteramos a través de las entradas del bloque actual
-            for (int i = 0; i < BLOCKSIZE / sizeof(struct entrada); i++)
-            {
-                if (strcmp(entradas[i].nombre, inicial) == 0)
-                {
-                    entrada = entradas[i];
-                    break;
-                }
-            }
-
-            if (entrada.ninodo != 0) // Si hemos encontrado la entrada
-            {
-                break;
-            }
-
-            // Si no encontramos la entrada, leemos el siguiente bloque
-            num_entrada_inodo++;
-            memset(entradas, 0, BLOCKSIZE);
-            if (mi_read_f(*p_inodo_dir, entradas, num_entrada_inodo * sizeof(struct entrada), BLOCKSIZE) == FALLO)
+            // Leemos el bloque actual
+            if (mi_read_f(*p_inodo_dir, entradas, bloque_actual * BLOCKSIZE, BLOCKSIZE) == FALLO)
             {
                 mostrar_error_buscar_entrada(ERROR_PERMISO_LECTURA);
                 return FALLO;
             }
+
+            // Iteramos a través de las entradas del bloque actual
+            for (int i = 0; i < BLOCKSIZE / sizeof(struct entrada) && num_entrada_inodo < cant_entradas_inodo; i++)
+            {
+                if (strcmp(entradas[i].nombre, inicial) == 0)
+                {
+                    entrada = entradas[i];
+                    entrada_encontrada = 1;
+                    break;
+                }
+                num_entrada_inodo++;
+            }
+
+            // Si no encontramos la entrada, pasamos al siguiente bloque
+            bloque_actual++;
         }
     }
 
@@ -479,6 +472,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
     int bytesEscritos;
+    int lru_index = 0;
     int entradaEnCache = FALLO;
 
     // Comprobamos si encontramos el camino actual en la caché
@@ -492,6 +486,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
             // Actualizar tiempo de acceso
             gettimeofday(&UltimasEntradasE[i].ultima_consulta, NULL);
 
+            lru_index = i;
             entradaEnCache = EXITO;
         }
     }
@@ -505,22 +500,21 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
         }
 
         // Actualizamos la caché LRU con la nueva entrada encontrada
-#if DEBUGN9
-        fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]\n" RESET);
-#endif
-
         struct timeval tiempoActual;
         gettimeofday(&tiempoActual, NULL);
 
         // Buscar la entrada usada hace más tiempo para substituirla
-        int lru_index = 0;
-        for (int i = 1; i < CACHE_SIZE; i++)
+        for (int i = 0; i < CACHE_SIZE; i++)
         {
             if (timercmp(&UltimasEntradasE[i].ultima_consulta, &UltimasEntradasE[lru_index].ultima_consulta, <))
             {
                 lru_index = i;
             }
         }
+
+#if DEBUGN9
+        fprintf(stderr, ORANGE "[mi_write() → Reemplazamos cache[%d]: %s]\n" RESET, lru_index, camino);
+#endif
 
         strcpy(UltimasEntradasE[lru_index].camino, camino);
         UltimasEntradasE[lru_index].p_inodo = p_inodo;
@@ -529,7 +523,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     else
     {
 #if DEBUGN9
-        fprintf(stderr, BLUE "[mi_write() → Utilizamos la caché de escritura en vez de llamar a buscar_entrada()]\n" RESET);
+        fprintf(stderr, BLUE "\n[mi_write() → Utilizamos cache[%d]: %s]\n" RESET, lru_index, camino);
 #endif
     }
 
@@ -560,6 +554,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
     int bytesLeidos;
+    int lru_index = 0;
     int entradaEnCache = FALLO;
 
     // Comprobamos si encontramos el camino actual en la caché
@@ -573,6 +568,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             // Actualizar tiempo de acceso
             gettimeofday(&UltimasEntradasL[i].ultima_consulta, NULL);
 
+            lru_index = i;
             entradaEnCache = EXITO;
         }
     }
@@ -587,15 +583,14 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
 
 // Actualizamos la caché LRU con la nueva entrada encontrada
 #if DEBUGN9
-        fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]\n" RESET);
+        fprintf(stderr, ORANGE "[mi_read() → Reemplazamos cache[%d]: %s]\n" RESET, lru_index, camino);
 #endif
 
         struct timeval tiempoActual;
         gettimeofday(&tiempoActual, NULL);
 
         // Buscar la entrada usada hace más tiempo para substituirla
-        int lru_index = 0;
-        for (int i = 1; i < CACHE_SIZE; i++)
+        for (int i = 0; i < CACHE_SIZE; i++)
         {
             if (timercmp(&UltimasEntradasL[i].ultima_consulta, &UltimasEntradasL[lru_index].ultima_consulta, <))
             {
@@ -610,7 +605,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     else
     {
 #if DEBUGN9
-  fprintf(stderr, BLUE "\n[mi_read() → Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n" RESET);
+        fprintf(stderr, BLUE "\n[mi_read() → Utilizamos cache[%d]: %s]\n" RESET, lru_index, camino);
 #endif
     }
 
