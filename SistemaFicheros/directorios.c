@@ -627,6 +627,64 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
  */
 int mi_link(const char *camino1, const char *camino2)
 {
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+
+    unsigned int p_inodo_dir2 = 0;
+    unsigned int p_inodo2 = 0;
+    unsigned int p_entrada2 = 0;
+
+    struct inodo inodo1;
+    struct entrada entrada;
+
+    if (buscar_entrada(camino1, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+    {
+        return FALLO;
+    }
+
+    leer_inodo(p_inodo, &inodo1);
+
+    // Comprobamos que tenemos permisos de lectura
+    if (inodo1.permisos < 4)
+    {
+        return FALLO;
+    }
+
+    // Comprobamos que el camino sea a un fichero
+    if (inodo1.tipo != 'f')
+    {
+        return FALLO;
+    }
+
+    // Creamos la entrada de camino2
+    if (buscar_entrada(camino2, &p_inodo_dir2, &p_inodo2, &p_entrada2, 1, 6) == FALLO)
+    {
+        return FALLO;
+    }
+
+    // Leemos la entrada de camino2
+    if (mi_read_f(p_inodo_dir2, &entrada, p_entrada2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        return FALLO;
+    }
+
+    // Creamos el enlace
+    entrada.ninodo = p_inodo;
+    if (mi_write_f(p_inodo_dir2, &entrada, p_entrada2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        return FALLO;
+    }
+
+    // Liberamos el inodo asociado a la entrada creada
+    liberar_inodo(p_inodo2);
+
+    inodo1.nlinks++;
+    inodo1.ctime = time(NULL);
+
+    escribir_inodo(p_inodo, &inodo1);
+
+    return EXITO;
 }
 
 /**
