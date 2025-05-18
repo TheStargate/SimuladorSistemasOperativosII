@@ -806,6 +806,8 @@ int mi_rename(const char *camino, const char *nombreNuevo)
         return FALLO;
     }
 
+    memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
+
     if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
         return FALLO;
@@ -824,18 +826,114 @@ int comprob_nuevoNombre(int ninodo, struct inodo inodo, const char *nombreNuevo)
 
     struct entrada entrada;
     int nEntrada = 0;
+    memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
     while (nEntrada < inodo.tamEnBytesLog / sizeof(struct entrada))
     {
         if (mi_read_f(ninodo, &entrada, nEntrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
         {
+            fprintf(stderr, "[DEBUG] mi_read_f falló en la entrada %d\n", nEntrada);
             return FALLO;
         }
-        if (strcmp(entrada.nombre, nombreNuevo) == 0)
-        {
+        
 
+        fprintf(stderr, "NombreNuevo: %s\n", entrada.nombre);
+        fprintf(stderr, "NombreFicherantiguo: %s\n", nombreNuevo);
+        if (strcmp(entrada.nombre, nombreNuevo) == 0)
+        {   
+            
             return FALLO;
         }
         nEntrada++;
     }
     return EXITO;
+}
+
+int mi_move(const char *camino, const char *caminoNuevo)
+{
+
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+
+    unsigned int p_inodo_dir_dest = 0;
+    unsigned int p_inodo_dest = 0;
+    unsigned int p_entrada_dest = 0;
+
+    struct inodo inodo_dir;
+    struct inodo inodo_dest;
+    struct entrada entrada;
+
+
+    //Leemos directorio actual  
+
+    if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+    {
+        fprintf(stderr,"FALLO1");
+        return FALLO;
+    }
+    if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO)
+    {
+        fprintf(stderr,"FALLO2");
+        return FALLO;
+    }
+    memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
+    if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        fprintf(stderr,"FALLO3");
+        return FALLO;
+    } //Ahora obtenemos nombre del archivo a mover.
+
+
+    // Leemos directorio destino
+    if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
+    {
+        fprintf(stderr,"FALLO4");
+        return FALLO;
+    }
+    if (leer_inodo(p_inodo_dest, &inodo_dest) == FALLO)
+    {
+        fprintf(stderr,"FALLO5");
+        return FALLO;
+    }
+
+    fprintf(stderr, "%s\n", entrada.nombre);
+    char * nombreArchivo = entrada.nombre;
+    if (comprob_nuevoNombre(p_inodo_dest, inodo_dest, nombreArchivo) == FALLO)
+    {
+        
+#if DEBUGNEXT
+        fprintf(stderr, RED "Error: La entrada ya existe\n" RESET);
+#endif
+        return FALLO;
+    }
+    if (mi_unlink(camino) == FALLO) {
+        fprintf(stderr,"FALLO6");
+        return FALLO;
+    }
+
+   /* if (mi_creat(caminoNuevo, 7) == FALLO) {
+        fprintf(stderr,"FALLO7");
+        return FALLO;
+    } */
+    if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
+    {
+        fprintf(stderr,"FALLO8");
+        return FALLO;
+    }
+    if (leer_inodo(p_inodo_dest, &inodo_dest) == FALLO)
+    {
+        fprintf(stderr,"FALLO9");
+        return FALLO;
+    }
+    
+    if (mi_write_f(p_inodo_dest, &entrada, p_entrada_dest * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        fprintf(stderr,"FALLO10");
+        return FALLO;
+    } 
+
+    
+
+return EXITO;
+    // Leemos directorio destino
 }
