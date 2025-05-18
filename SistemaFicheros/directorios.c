@@ -716,7 +716,7 @@ int mi_unlink(const char *camino)
         return FALLO;
     }
 
-    if (inodo.tipo = 'd' && inodo.tamEnBytesLog > 0)
+    if (inodo.tipo == 'd' && inodo.tamEnBytesLog > 0)
     {
 
 #if DEBUGN10
@@ -769,7 +769,7 @@ int mi_unlink(const char *camino)
             }
             else
             {
-                inodo.ctime = ctime(NULL);
+                inodo.ctime = time(NULL);
                 if (escribir_inodo(p_inodo, &inodo) == FALLO)
                     return FALLO;
             }
