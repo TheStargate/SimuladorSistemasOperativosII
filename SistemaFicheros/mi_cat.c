@@ -34,6 +34,7 @@ int main(int argc, char **argv)
     // Limpiamos el buffer
     memset(buffer_texto, 0, tambuffer);
     int leidos = mi_read(camino, buffer_texto, offset, tambuffer);
+    
 
     // Leemos mientras quede contenido
     while (leidos > 0)
@@ -43,6 +44,7 @@ int main(int argc, char **argv)
         offset += tambuffer;
         memset(buffer_texto, 0, tambuffer);
         leidos = mi_read(camino, buffer_texto, offset, tambuffer);
+        
     }
 
     fprintf(stderr, "\nTotal_leidos: " BLUE "%d\n" RESET, totalBytesLeidos);
