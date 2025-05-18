@@ -699,4 +699,80 @@ int mi_link(const char *camino1, const char *camino2)
  */
 int mi_unlink(const char *camino)
 {
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+
+    struct inodo inodo;
+    struct inodo inodo_dir;
+
+    if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+    {
+        return FALLO;
+    }
+
+    if (leer_inodo(p_inodo, &inodo) == FALLO)
+    {
+        return FALLO;
+    }
+
+    if (inodo.tipo = 'd' && inodo.tamEnBytesLog > 0)
+    {
+
+#if DEBUGN10
+        fprintf(stderr, RED "Error: el directorio %s no está vacío\n" RESET, camino);
+#endif
+
+        return FALLO; // No se puede borrar porque no está vacío.
+    }
+    else
+    {
+        if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO)
+        {
+            return FALLO;
+        }
+        unsigned int n_Entradas_Dir = inodo_dir.tamEnBytesLog / sizeof(struct entrada);
+
+        if (p_entrada == n_Entradas_Dir - 1)
+        { // Le restamos el tamaño de una entrada para posicionarnos justo encima de la últime entrada
+            if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+            {
+                return FALLO;
+            }
+        }
+        else
+        {
+            struct entrada ultimaEntrada;
+            // Leemos la última entrada ya que es la que borraremos con mi_truncar_f pero los datos de la última entrada no son los que queremos borrar.
+            if (mi_read_f(p_inodo_dir, &ultimaEntrada, inodo_dir.tamEnBytesLog - sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+            {
+                return FALLO;
+            }
+            // Escribimos en la entrada que queríamos eliminar la ultima entrada y luego eliminamos la última entrada.
+            if (mi_write_f(p_inodo_dir, &ultimaEntrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+            {
+                return FALLO;
+            }
+
+            if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+            {
+                return FALLO;
+            }
+
+            inodo.nlinks--;
+            if (inodo.nlinks == 0)
+            {
+                if (liberar_inodo(p_inodo) == FALLO)
+                {
+                    return FALLO;
+                }
+            }
+            else
+            {
+                inodo.ctime = ctime(NULL);
+                if (escribir_inodo(p_inodo, &inodo) == FALLO)
+                    return FALLO;
+            }
+        }
+    }
 }

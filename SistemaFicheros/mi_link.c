@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
 
     // Intentamos crear el enlace del archivo
 	if (mi_link(camino1, camino2) == FALLO){
+		bumount();
 		return FALLO;
 	}
 
