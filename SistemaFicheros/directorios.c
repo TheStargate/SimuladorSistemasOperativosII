@@ -835,6 +835,7 @@ int comprob_nuevoNombre(int ninodo, struct inodo inodo, const char *nombreNuevo)
 
             return FALLO;
         }
+        nEntrada++;
     }
     return EXITO;
 }
