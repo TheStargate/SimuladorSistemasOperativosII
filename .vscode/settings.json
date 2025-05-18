@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "directorios.h": "c",
+        "time.h": "c"
+    }
+}

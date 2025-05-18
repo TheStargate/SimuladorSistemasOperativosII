@@ -759,21 +759,50 @@ int mi_unlink(const char *camino)
                 return FALLO;
             }
         }
-            inodo.nlinks--;
-            if (inodo.nlinks == 0)
+        inodo.nlinks--;
+        if (inodo.nlinks == 0)
+        {
+            if (liberar_inodo(p_inodo) == FALLO)
             {
-                if (liberar_inodo(p_inodo) == FALLO)
-                {
-                    return FALLO;
-                }
+                return FALLO;
             }
-            else
-            {
-                inodo.ctime = time(NULL);
-                if (escribir_inodo(p_inodo, &inodo) == FALLO)
-                    return FALLO;
-            }
-        
+        }
+        else
+        {
+            inodo.ctime = time(NULL);
+            if (escribir_inodo(p_inodo, &inodo) == FALLO)
+                return FALLO;
+        }
+    }
+    return EXITO;
+}
+
+// Extras
+
+int mi_rename(const char *camino, const char *nombreNuevo)
+{
+
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+    struct inodo inodo_dir;
+    struct entrada entrada;
+    if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+    {
+        return FALLO;
+    }
+    if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO)
+    {
+        return FALLO;
+    }
+    if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        return FALLO;
+    }
+    strcpy(entrada.nombre, nombreNuevo);
+    if (mi_write_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        return FALLO;
     }
     return EXITO;
 }
