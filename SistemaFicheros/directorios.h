@@ -53,3 +53,4 @@ int mi_link(const char *camino1, const char *camino2);
 int mi_unlink(const char *camino);
 
 int mi_rename(const char *camino, const char *nombreNuevo);
+int comprob_nuevoNombre(int ninodo, struct inodo inodo, const char *nombreNuevo);

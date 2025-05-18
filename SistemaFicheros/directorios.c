@@ -785,8 +785,10 @@ int mi_rename(const char *camino, const char *nombreNuevo)
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
+
     struct inodo inodo_dir;
     struct entrada entrada;
+
     if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
     {
         return FALLO;
@@ -795,14 +797,44 @@ int mi_rename(const char *camino, const char *nombreNuevo)
     {
         return FALLO;
     }
+    // Comprueba si existe el nombre ya
+    if (comprob_nuevoNombre(p_inodo_dir, inodo_dir, nombreNuevo) == FALLO)
+    {
+#if DEBUGNEXT
+        fprintf(stderr, RED "Error: La entrada ya existe\n" RESET);
+#endif
+        return FALLO;
+    }
+
     if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
         return FALLO;
     }
+
     strcpy(entrada.nombre, nombreNuevo);
     if (mi_write_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
         return FALLO;
+    }
+    return EXITO;
+}
+
+int comprob_nuevoNombre(int ninodo, struct inodo inodo, const char *nombreNuevo)
+{
+
+    struct entrada entrada;
+    int nEntrada = 0;
+    while (nEntrada < inodo.tamEnBytesLog / sizeof(struct entrada))
+    {
+        if (mi_read_f(ninodo, &entrada, nEntrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+        {
+            return FALLO;
+        }
+        if (strcmp(entrada.nombre, nombreNuevo) == 0)
+        {
+
+            return FALLO;
+        }
     }
     return EXITO;
 }

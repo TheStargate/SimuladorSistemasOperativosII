@@ -4,7 +4,7 @@
 
 
 
-int main(int argc, char const *argv[])
+int main(int argc, char **argv)
 {
     if (argc != 4) {
         return FALLO;
@@ -16,24 +16,6 @@ int main(int argc, char const *argv[])
     if ((caminoAntiguo[strlen(caminoAntiguo)-1] != '/' && nombreNuevo[strlen(nombreNuevo)-1] == '/') || (caminoAntiguo[strlen(caminoAntiguo)-1] == '/' && nombreNuevo[strlen(nombreNuevo)-1] != '/') ) {
         fprintf(stderr, "ERROR: los archivos deben ser del mismo tipo");
     }
-    //Para evitar segment fault
-
-    char caminoModif [TAMNOMBRE]; //Camino modificable
-    strcpy (caminoModif, caminoAntiguo);
-    const char * delimitador = "/";
-    char *token = strtok(caminoModif, delimitador);
-    char *ultimo;
-    while (token != NULL) {
-    ultimo = token;
-    token = strtok(NULL, delimitador);
-  }
-    //En último queda almacenado el token que se correspondería al nombre del archivo antiguo.
-    if (strcmp (nombreNuevo, ultimo) == 0) {
-        fprintf(stderr, "Error: La entrada ya existe", RESET);
-        return FALLO;
-    }
-    
-
 
     bmount(disco);
 

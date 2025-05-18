@@ -45,7 +45,7 @@ int main(int argc, char **argv)
         leidos = mi_read(camino, buffer_texto, offset, tambuffer);
     }
 
-    fprintf(stderr, "\n\nTotal_leidos " BLUE "%d" RESET, totalBytesLeidos);
+    fprintf(stderr, "\nTotal_leidos: " BLUE "%d\n" RESET, totalBytesLeidos);
 
     bumount();
 
