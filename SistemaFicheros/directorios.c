@@ -758,7 +758,7 @@ int mi_unlink(const char *camino)
             {
                 return FALLO;
             }
-
+        }
             inodo.nlinks--;
             if (inodo.nlinks == 0)
             {
@@ -773,7 +773,7 @@ int mi_unlink(const char *camino)
                 if (escribir_inodo(p_inodo, &inodo) == FALLO)
                     return FALLO;
             }
-        }
+        
     }
     return EXITO;
 }
