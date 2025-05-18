@@ -15,7 +15,11 @@ int main (int argc, char **argv) {
 
     if (strcmp(camino,"/")== 0){
         fprintf(stderr, "Error: No se puede borrar la raiz del sistema de ficheros!!\n");
+        bumount();
         return FALLO;
+    }
+    if (camino[strlen(camino)-1] == '/') {
+        fprintf(stderr, "ERROR: no es un fichero");
     }
 
     // Montamos el disco
@@ -23,11 +27,12 @@ int main (int argc, char **argv) {
 
     // Intenta borrar el archivo
     if (mi_unlink(camino) == FALLO){
-        fprintf(stderr, "Error al borrar el archivo\n");
+       // fprintf(stderr, "Error al borrar el archivo\n");
+        bumount();
         return FALLO;
     }
 
-    printf("Archivo borrado correctamente\n");
+   // printf("Archivo borrado correctamente\n");
 
     // Desmontamos el disco
     bumount();

@@ -775,4 +775,5 @@ int mi_unlink(const char *camino)
             }
         }
     }
+    return EXITO;
 }
