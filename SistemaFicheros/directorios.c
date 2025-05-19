@@ -937,3 +937,44 @@ int mi_move(const char *camino, const char *caminoNuevo)
 return EXITO;
     // Leemos directorio destino
 }
+
+int mi_rm_r(const char *camino) {
+    unsigned int p_inodo_dir, p_inodo, p_entrada;
+    struct inodo inodo;
+
+    // Obtener inodo de 'camino'
+    if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO) {
+        return FALLO;
+    }
+    if (leer_inodo(p_inodo, &inodo) == FALLO) {
+        return FALLO;
+    }
+
+    // Si es directorio, recorrer entradas
+    if (inodo.tipo == 'd') {
+        int nentradas = inodo.tamEnBytesLog / sizeof(struct entrada);
+        struct entrada ent;
+        for (int i = 0; i < nentradas; i++) {
+            if (mi_read_f(p_inodo, &ent, i * sizeof(struct entrada), sizeof(struct entrada)) == FALLO) {
+                return FALLO;
+            }
+            // Saltar "." y ".."
+            if (strcmp(ent.nombre, ".") != 0 && strcmp(ent.nombre, "..") != 0) {
+                // Construir nuevo camino
+                char nuevo_camino[strlen(camino) + 1 + strlen(ent.nombre) + 1];
+                sprintf(nuevo_camino, "%s/%s", camino, ent.nombre);
+                // Recursión
+                if (mi_rm_r(nuevo_camino) == FALLO) {
+                    return FALLO;
+                }
+            }
+        }
+    }
+
+    // Borrar el fichero o directorio (ahora vacío)
+    if (mi_unlink(camino) == FALLO) {
+        return FALLO;
+    }
+
+    return EXITO;
+}
