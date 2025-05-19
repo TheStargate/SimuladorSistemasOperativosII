@@ -1,41 +1,41 @@
 #include <stdio.h>
 #include "directorios.h"
 
-int main (int argc, char **argv) {
-    
-    // Verificamos que se han pasado los 5 argumentos exactamente
-	if(argc != 3){
-		fprintf(stderr, "Error. Sintaxis correcta: mi_rm <disco> </ruta>\n");
-		return FALLO;
-	}
+int main(int argc, char **argv)
+{
 
-    // Comprobamos que el disco y la ruta no son nulos
-    char *disco = argv[1];  // Nombre del disco
-	char *camino = argv[2]; // Ruta del archivo a borrar
+    if (argc != 3)
+    {
+        fprintf(stderr, RED "Número de argumentos incorrecto. Sintaxis: mi_rmdir <disco> </ruta>\n" RESET);
+        return FALLO;
+    }
 
-    if (strcmp(camino,"/")== 0){
-        fprintf(stderr, "Error: No se puede borrar la raiz del sistema de ficheros!!\n");
+    char *disco = argv[1];
+    char *camino = argv[2];
+
+    if (strcmp(camino, "/") == 0)
+    {
+        fprintf(stderr, RED "ERROR: No se puede borrar la raiz del sistema de ficheros\n" RESET);
         bumount();
         return FALLO;
     }
 
-    if (camino[strlen(camino)-1] != '/') {
-        fprintf(stderr, "ERROR: no es un directorio");
+    if (camino[strlen(camino) - 1] != '/')
+    {
+        fprintf(stderr, RED "ERROR: no es un directorio" RESET);
     }
 
-    // Montamos el disco
     bmount(disco);
 
     // Intenta borrar el archivo
-    if (mi_unlink(camino) == FALLO){
-        //fprintf(stderr, "Error al borrar el archivo\n");
+    if (mi_unlink(camino) == FALLO)
+    {
+        // fprintf(stderr, "Error al borrar el archivo\n");
         bumount();
         return FALLO;
     }
 
-    //printf("Archivo borrado correctamente\n");
+    // printf("Archivo borrado correctamente\n");
 
-    // Desmontamos el disco
     bumount();
-    
 }
