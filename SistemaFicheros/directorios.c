@@ -834,8 +834,6 @@ int comprob_nuevoNombre(int ninodo, struct inodo inodo, const char *nombreNuevo)
             fprintf(stderr, "[DEBUG] mi_read_f falló en la entrada %d\n", nEntrada);
             return FALLO;
         }
-
-       
         if (strcmp(entrada.nombre, nombreNuevo) == 0)
         {
 
@@ -860,85 +858,45 @@ int mi_move(const char *camino, const char *caminoNuevo)
     struct inodo inodo;
     struct inodo inodo_dir;
     struct inodo inodo_dest;
-    
+
     struct entrada entrada;
 
     // Leemos directorio actual
 
     if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
     {
-        fprintf(stderr, "FALLO1");
         return FALLO;
     }
     // Primero queremos leer el tipo de archivo que queremos mover, por si es un fichero o un directorio
     if (leer_inodo(p_inodo, &inodo) == FALLO)
     {
-        fprintf(stderr, "FALLO2");
         return FALLO;
     }
     char tipo = inodo.tipo;
-    
+
     if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO)
     {
-        fprintf(stderr, "FALLO2");
         return FALLO;
     }
     memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
     if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
-        fprintf(stderr, "FALLO3");
+        
         return FALLO;
     } // Ahora obtenemos nombre del archivo a mover.
 
-
-    //BORRAR ENTRADA
-
-    unsigned int n_Entradas_Dir = inodo_dir.tamEnBytesLog / sizeof(struct entrada);
-
-        if (p_entrada == n_Entradas_Dir - 1)
-        { // Le restamos el tamaño de una entrada para posicionarnos justo encima de la últime entrada
-            if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
-            {
-                return FALLO;
-            }
-        }
-        else
-        {
-            struct entrada ultimaEntrada;
-            memset(&ultimaEntrada, 0, BLOCKSIZE / sizeof(struct entrada));
-            // Leemos la última entrada ya que es la que borraremos con mi_truncar_f pero los datos de la última entrada no son los que queremos borrar.
-            if (mi_read_f(p_inodo_dir, &ultimaEntrada, inodo_dir.tamEnBytesLog - sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
-            {
-                return FALLO;
-            }
-            // Escribimos en la entrada que queríamos eliminar la ultima entrada y luego eliminamos la última entrada.
-            if (mi_write_f(p_inodo_dir, &ultimaEntrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
-            {
-                return FALLO;
-            }
-
-            if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
-            {
-                return FALLO;
-            }
-        }
- 
-            inodo.ctime = time(NULL);
-            if (escribir_inodo(p_inodo, &inodo) == FALLO)
-                return FALLO;
-        
     // Leemos directorio destino
     if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
     {
-        fprintf(stderr, "FALLO4");
+        
         return FALLO;
     }
     if (leer_inodo(p_inodo_dest, &inodo_dest) == FALLO)
     {
-        fprintf(stderr, "FALLO5");
+        
         return FALLO;
     }
-    
+
     char *nombreArchivo = entrada.nombre; // HE PENSADO QUE SI BUSCAMOS ENTRADA CON EL NOMBRE NUEVO EXISTE.
     if (comprob_nuevoNombre(p_inodo_dest, inodo_dest, nombreArchivo) == FALLO)
     {
@@ -948,7 +906,6 @@ int mi_move(const char *camino, const char *caminoNuevo)
 #endif
         return FALLO;
     }
-    
 
     int tam = strlen(caminoNuevo) + strlen(entrada.nombre);
 
@@ -957,7 +914,6 @@ int mi_move(const char *camino, const char *caminoNuevo)
         tam++;
     }
     tam++;
-    fprintf(stderr, "%d", tam);
     char caminofinal[tam];
     strcpy(caminofinal, caminoNuevo);
     strcat(caminofinal, nombreArchivo);
@@ -968,21 +924,58 @@ int mi_move(const char *camino, const char *caminoNuevo)
 
     if (mi_write_f(p_inodo_dest, &entrada, inodo_dest.tamEnBytesLog, sizeof(struct entrada)) == FALLO)
     {
-        fprintf(stderr, "FALLO10");
+        
         return FALLO;
     }
-    
+
+    // BORRAR ENTRADA
+
+    unsigned int n_Entradas_Dir = inodo_dir.tamEnBytesLog / sizeof(struct entrada);
+
+    if (p_entrada == n_Entradas_Dir - 1)
+    { // Le restamos el tamaño de una entrada para posicionarnos justo encima de la últime entrada
+        if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+        {
+            return FALLO;
+        }
+    }
+    else
+    {
+        struct entrada ultimaEntrada;
+        memset(&ultimaEntrada, 0, BLOCKSIZE / sizeof(struct entrada));
+        // Leemos la última entrada ya que es la que borraremos con mi_truncar_f pero los datos de la última entrada no son los que queremos borrar.
+        if (mi_read_f(p_inodo_dir, &ultimaEntrada, inodo_dir.tamEnBytesLog - sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+        {
+            return FALLO;
+        }
+        // Escribimos en la entrada que queríamos eliminar la ultima entrada y luego eliminamos la última entrada.
+        if (mi_write_f(p_inodo_dir, &ultimaEntrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+        {
+            return FALLO;
+        }
+
+        if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+        {
+            return FALLO;
+        }
+    }
+
+    inodo.ctime = time(NULL);
+    if (escribir_inodo(p_inodo, &inodo) == FALLO)
+        return FALLO;
+
     return EXITO;
     // Leemos directorio destino
 }
 
 /**
  * Funcionalidad extra para copiar un fichero o directorio.
+ * @param origen Ruta en el disco de origen (puede ser fichero o directorio)
+ * @param destino Ruta de destino, debe terminar siempre en '/'
  */
-int mi_cp(const char *origen, const char *destino) {
-    
+int mi_cp(const char *origen, const char *destino)
+{
 }
-
 
 /**
  * Funcionalidad extra para eliminar un directorio y su contenido de forma recursiva.
