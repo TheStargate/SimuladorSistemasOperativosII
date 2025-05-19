@@ -18,6 +18,7 @@ int main (int argc, char **argv) {
     }
     if (camino[strlen(camino)-1] == '/') {
         fprintf(stderr, RED "ERROR: no es un fichero" RESET);
+        return FALLO;
     }
 
     bmount(disco);

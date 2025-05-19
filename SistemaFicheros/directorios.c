@@ -160,8 +160,8 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
         {
         case 0: // modo consulta
             mostrar_error_buscar_entrada(ERROR_NO_EXISTE_ENTRADA_CONSULTA);
-            return FALLO; //Si falla
-        case 1: // modo escritura
+            return FALLO; // Si falla
+        case 1:           // modo escritura
             // Creamos la entrada en el directorio referenciado por *p_inodo_dir
             // si es fichero no permitir escritura
             if (inodo_dir.tipo == 'f')
@@ -922,9 +922,9 @@ int mi_move(const char *camino, const char *caminoNuevo)
 
     int tam = strlen(caminoNuevo) + strlen(entrada.nombre);
 
-    if (tipo == 'd') {
+    if (tipo == 'd')
+    {
         tam++;
-        
     }
     tam++;
     fprintf(stderr, "%d", tam);
@@ -933,25 +933,24 @@ int mi_move(const char *camino, const char *caminoNuevo)
     strcat(caminofinal, nombreArchivo);
     if (tipo == 'd')
     { // Si es un directorio
-        caminofinal[strlen(caminofinal)-1] = '/';
-        
-    
-    } 
+        caminofinal[strlen(caminofinal) - 1] = '/';
+    }
 
-     if (mi_creat(caminofinal, permisos) == FALLO) {
-         fprintf(stderr,"FALLO7");
-         return FALLO;
-     } 
+    if (mi_creat(caminofinal, permisos) == FALLO)
+    {
+        fprintf(stderr, "FALLO7");
+        return FALLO;
+    }
     if (buscar_entrada(caminofinal, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
     {
         fprintf(stderr, "FALLO8");
         return FALLO;
     }
-   /* if (leer_inodo(p_inodo_dir_dest, &inodo_dir_dest) == FALLO)
-    {
-        fprintf(stderr, "FALLO9");
-        return FALLO;
-    } */
+    /* if (leer_inodo(p_inodo_dir_dest, &inodo_dir_dest) == FALLO)
+     {
+         fprintf(stderr, "FALLO9");
+         return FALLO;
+     } */
 
     if (mi_write_f(p_inodo_dir_dest, &entrada, p_entrada_dest * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
@@ -969,7 +968,6 @@ int mi_move(const char *camino, const char *caminoNuevo)
  * @param camino Cadena de caracteres que contiene el camino a eliminar
  * @return EXITO si se ha eliminado correctamente, FALLO si ha habido algún error.
  */
-/*
 int mi_rm_r(const char *camino)
 {
     unsigned int p_inodo_dir = 0;
@@ -1007,17 +1005,25 @@ int mi_rm_r(const char *camino)
             // Comprobamos que no sea "." o "..", es decir, que no sea ni el propio directorio ni su padre
             if (strcmp(entrada.nombre, ".") != 0 && strcmp(entrada.nombre, "..") != 0)
             {
-                 // Construir nuevo camino
-                char nuevo_camino[strlen(camino) + 1 + strlen(entrada.nombre) + 1]; // se suma 1 para el '/' y 1 para el '\0'
-                
-                // Concatena en nuevo_camino la ruta completa: primero 'camino', luego '/', y finalmente 'entrada.nombre', añadiendo el terminador '\0'
-                // se usa el snprintf para evitar desbordamiento de buffer
-                snprintf(nuevo_camino, "%s/%s", camino, entrada.nombre); 
-                
-                // Recursión
-                if (mi_rm_r(nuevo_camino) == FALLO) {
+                size_t longitud = strlen(camino) + 1 + strlen(entrada.nombre) + 1; // +1 para '/' y +1 para '\0'
+
+                // Reservamos memoria para el nuevo camino
+                char *nuevo_camino = malloc(longitud);
+                if (!nuevo_camino)
                     return FALLO;
-                }
+
+                // Construimos el nuevo camino
+                strcpy(nuevo_camino, camino);
+                strcat(nuevo_camino, "/");
+                strcat(nuevo_camino, entrada.nombre);
+
+                // Llamamos a mi_rm_r() de forma recursiva
+                int res = mi_rm_r(nuevo_camino);
+
+                // Liberamos la memoria del nuevo camino
+                free(nuevo_camino);
+                if (res == FALLO)
+                    return FALLO;
             }
         }
     }
@@ -1030,4 +1036,3 @@ int mi_rm_r(const char *camino)
 
     return EXITO;
 }
-*/
