@@ -881,19 +881,19 @@ int mi_move(const char *camino, const char *caminoNuevo)
     memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
     if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
-        
+
         return FALLO;
     } // Ahora obtenemos nombre del archivo a mover.
 
     // Leemos directorio destino
     if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
     {
-        
+
         return FALLO;
     }
     if (leer_inodo(p_inodo_dest, &inodo_dest) == FALLO)
     {
-        
+
         return FALLO;
     }
 
@@ -924,7 +924,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
 
     if (mi_write_f(p_inodo_dest, &entrada, inodo_dest.tamEnBytesLog, sizeof(struct entrada)) == FALLO)
     {
-        
+
         return FALLO;
     }
 
@@ -973,6 +973,99 @@ int mi_move(const char *camino, const char *caminoNuevo)
  * @param origen Ruta en el disco de origen (puede ser fichero o directorio)
  * @param destino Ruta de destino, debe terminar siempre en '/'
  */
+int mi_cp_f(const char *origen, const char *destino)
+{
+
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+
+    unsigned int p_inodo_dir_dest = 0;
+    unsigned int p_inodo_dest = 0;
+    unsigned int p_entrada_dest = 0;
+
+    struct inodo inodo;
+    struct inodo inodo_dir;
+    struct inodo inodo_dest;
+
+    struct entrada entrada;
+
+    int tambuffer = BLOCKSIZE * 4;
+
+    char buffer_texto[tambuffer];
+    char buffer_cmp [tambuffer];
+    int offset = 0;
+    int totalBytesLeidos = 0;
+
+    // Leemos directorio actual
+
+    if (buscar_entrada(origen, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+    {
+        return FALLO;
+    }
+    // Primero queremos leer el tipo de archivo que queremos mover, por si es un fichero o un directorio
+    if (leer_inodo(p_inodo, &inodo) == FALLO)
+    {
+        return FALLO;
+    }
+
+    char tipo = inodo.tipo;
+    char permisos = inodo.permisos;
+
+    memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
+    if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+
+        return FALLO;
+    } // Ahora obtenemos nombre del archivo a mover.
+
+    // Leemos directorio destino
+    if (buscar_entrada(destino, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
+    {
+
+        return FALLO;
+    }
+    if (leer_inodo(p_inodo_dest, &inodo_dest) == FALLO)
+    {
+
+        return FALLO;
+    }
+
+
+    // fichero
+    int tam = strlen(destino) + strlen(entrada.nombre) + 1;
+    char caminofinal[tam];
+    strcpy(caminofinal, destino);
+    strcat(caminofinal, entrada.nombre);
+    
+    if (mi_write_f(p_inodo_dest, &entrada, inodo_dest.tamEnBytesLog, sizeof(struct entrada)) == FALLO)
+    {
+
+        return FALLO;
+    }
+    // Limpiamos el buffer
+    memset(buffer_texto, 0, tambuffer);
+    memset(buffer_cmp, 0, tambuffer);
+    int leidos = mi_read(origen, buffer_texto, offset, tambuffer);
+    int escritos;
+    if (strcmp (buffer_texto,buffer_cmp) != 0) {
+       escritos = mi_write(caminofinal,buffer_texto, offset, tambuffer); 
+    }
+
+    // Leemos mientras quede contenido
+    while (leidos > 0)
+    {
+        write(1, buffer_texto, leidos);
+        totalBytesLeidos += leidos;
+        offset += tambuffer;
+        memset(buffer_texto, 0, tambuffer);
+        leidos = mi_read(origen, buffer_texto, offset, tambuffer);
+        if (strcmp (buffer_texto,buffer_cmp) != 0) {
+       escritos = mi_write(caminofinal,buffer_texto, offset, tambuffer); 
+    }
+    }
+}
+
 int mi_cp(const char *origen, const char *destino)
 {
 }
