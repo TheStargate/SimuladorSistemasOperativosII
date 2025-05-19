@@ -57,4 +57,4 @@ int comprob_nuevoNombre(int ninodo, struct inodo inodo, const char *nombreNuevo)
 
 int mi_move(const char *camino, const char *caminoNuevo);
 
-int mi_rm_r(const char *camino);
+int E_mi_rm_r(const char *camino);

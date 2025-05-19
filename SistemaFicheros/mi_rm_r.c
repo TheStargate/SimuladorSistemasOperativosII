@@ -23,7 +23,7 @@ int main (int argc, char **argv) {
 
     bmount(disco);
 
-    if (mi_rm_r(camino) == FALLO) {
+    if (E_mi_rm_r(camino) == FALLO) {
         fprintf(stderr, RED "Error al borrar recursivamente %s\n" RESET, camino);
         bumount();
         return FALLO;

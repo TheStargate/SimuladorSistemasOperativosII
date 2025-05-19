@@ -858,6 +858,10 @@ int mi_move(const char *camino, const char *caminoNuevo)
     unsigned int p_inodo_dest = 0;
     unsigned int p_entrada_dest = 0;
 
+    unsigned int p_inodo_dir_dest2 = 0;
+    unsigned int p_inodo_dest2 = 0;
+    unsigned int p_entrada_dest2 = 0;
+
     struct inodo inodo;
     struct inodo inodo_dir;
     struct inodo inodo_dest;
@@ -879,6 +883,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
     }
     char tipo = inodo.tipo;
     char permisos = inodo.permisos;
+    fprintf(stderr, "%d", inodo.tamEnBytesLog);
 
     if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO)
     {
@@ -891,7 +896,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
         fprintf(stderr, "FALLO3");
         return FALLO;
     } // Ahora obtenemos nombre del archivo a mover.
-
+    fprintf(stderr, "nombre: %s y ninodo: %d\n", entrada.nombre,entrada.ninodo);
     // Leemos directorio destino
     if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
     {
@@ -903,6 +908,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
         fprintf(stderr, "FALLO5");
         return FALLO;
     }
+    fprintf(stderr, "Valor:%d", inodo_dest.tamEnBytesLog);
 
     fprintf(stderr, "%s\n", entrada.nombre);
     char *nombreArchivo = entrada.nombre; // HE PENSADO QUE SI BUSCAMOS ENTRADA CON EL NOMBRE NUEVO EXISTE.
@@ -914,11 +920,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
 #endif
         return FALLO;
     }
-    if (mi_unlink(camino) == FALLO)
-    {
-        fprintf(stderr, "FALLO6");
-        return FALLO;
-    }
+    
 
     int tam = strlen(caminoNuevo) + strlen(entrada.nombre);
 
@@ -935,29 +937,48 @@ int mi_move(const char *camino, const char *caminoNuevo)
     { // Si es un directorio
         caminofinal[strlen(caminofinal) - 1] = '/';
     }
-
+/*
     if (mi_creat(caminofinal, permisos) == FALLO)
     {
         fprintf(stderr, "FALLO7");
         return FALLO;
     }
-    if (buscar_entrada(caminofinal, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
+    if (buscar_entrada(caminofinal, &p_inodo_dir_dest2, &p_inodo_dest2, &p_entrada_dest2, 0, 7) == FALLO)
     {
         fprintf(stderr, "FALLO8");
         return FALLO;
     }
-    /* if (leer_inodo(p_inodo_dir_dest, &inodo_dir_dest) == FALLO)
-     {
-         fprintf(stderr, "FALLO9");
-         return FALLO;
-     } */
 
-    if (mi_write_f(p_inodo_dir_dest, &entrada, p_entrada_dest * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    if (mi_write_f(p_inodo_dir_dest2, &entrada, p_entrada_dest2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
         fprintf(stderr, "FALLO10");
         return FALLO;
     }
-
+    */
+    if (mi_write_f(p_inodo_dest, &entrada, inodo_dest.tamEnBytesLog, sizeof(struct entrada)) == FALLO)
+    {
+        fprintf(stderr, "FALLO10");
+        return FALLO;
+    }
+    fprintf(stderr, "Valor:%d", inodo_dest.tamEnBytesLog);
+    /*
+    if (buscar_entrada(caminofinal, &p_inodo_dir_dest2, &p_inodo_dest2, &p_entrada_dest2, 0, 7) == FALLO)
+    {
+        fprintf(stderr, "FALLO8");
+        return FALLO;
+    }
+    if (mi_read_f(p_inodo_dir_dest2, &entrada, p_entrada_dest2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        fprintf(stderr, "FALLO10");
+        return FALLO;
+    }*/
+    fprintf(stderr, "nombre: %s y ninodo: %d\n", entrada.nombre,entrada.ninodo);
+    //memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
+    if (mi_unlink(camino) == FALLO)
+    {
+        fprintf(stderr, "FALLO6");
+        return FALLO;
+    }
     return EXITO;
     // Leemos directorio destino
 }
@@ -968,7 +989,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
  * @param camino Cadena de caracteres que contiene el camino a eliminar
  * @return EXITO si se ha eliminado correctamente, FALLO si ha habido algún error.
  */
-int mi_rm_r(const char *camino)
+int E_mi_rm_r(const char *camino)
 {
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
@@ -1018,7 +1039,7 @@ int mi_rm_r(const char *camino)
                 strcat(nuevo_camino, entrada.nombre);
 
                 // Llamamos a mi_rm_r() de forma recursiva
-                int res = mi_rm_r(nuevo_camino);
+                int res = E_mi_rm_r(nuevo_camino);
 
                 // Liberamos la memoria del nuevo camino
                 free(nuevo_camino);
