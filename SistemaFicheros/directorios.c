@@ -835,8 +835,7 @@ int comprob_nuevoNombre(int ninodo, struct inodo inodo, const char *nombreNuevo)
             return FALLO;
         }
 
-        fprintf(stderr, "NombreNuevo: %s\n", entrada.nombre);
-        fprintf(stderr, "NombreFicherantiguo: %s\n", nombreNuevo);
+       
         if (strcmp(entrada.nombre, nombreNuevo) == 0)
         {
 
@@ -858,14 +857,10 @@ int mi_move(const char *camino, const char *caminoNuevo)
     unsigned int p_inodo_dest = 0;
     unsigned int p_entrada_dest = 0;
 
-    unsigned int p_inodo_dir_dest2 = 0;
-    unsigned int p_inodo_dest2 = 0;
-    unsigned int p_entrada_dest2 = 0;
-
     struct inodo inodo;
     struct inodo inodo_dir;
     struct inodo inodo_dest;
-    struct inodo inodo_dir_dest;
+    
     struct entrada entrada;
 
     // Leemos directorio actual
@@ -882,9 +877,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
         return FALLO;
     }
     char tipo = inodo.tipo;
-    char permisos = inodo.permisos;
-    fprintf(stderr, "%d", inodo.tamEnBytesLog);
-
+    
     if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO)
     {
         fprintf(stderr, "FALLO2");
@@ -896,7 +889,44 @@ int mi_move(const char *camino, const char *caminoNuevo)
         fprintf(stderr, "FALLO3");
         return FALLO;
     } // Ahora obtenemos nombre del archivo a mover.
-    fprintf(stderr, "nombre: %s y ninodo: %d\n", entrada.nombre,entrada.ninodo);
+
+
+    //BORRAR ENTRADA
+
+    unsigned int n_Entradas_Dir = inodo_dir.tamEnBytesLog / sizeof(struct entrada);
+
+        if (p_entrada == n_Entradas_Dir - 1)
+        { // Le restamos el tamaño de una entrada para posicionarnos justo encima de la últime entrada
+            if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+            {
+                return FALLO;
+            }
+        }
+        else
+        {
+            struct entrada ultimaEntrada;
+            memset(&ultimaEntrada, 0, BLOCKSIZE / sizeof(struct entrada));
+            // Leemos la última entrada ya que es la que borraremos con mi_truncar_f pero los datos de la última entrada no son los que queremos borrar.
+            if (mi_read_f(p_inodo_dir, &ultimaEntrada, inodo_dir.tamEnBytesLog - sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+            {
+                return FALLO;
+            }
+            // Escribimos en la entrada que queríamos eliminar la ultima entrada y luego eliminamos la última entrada.
+            if (mi_write_f(p_inodo_dir, &ultimaEntrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+            {
+                return FALLO;
+            }
+
+            if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+            {
+                return FALLO;
+            }
+        }
+ 
+            inodo.ctime = time(NULL);
+            if (escribir_inodo(p_inodo, &inodo) == FALLO)
+                return FALLO;
+        
     // Leemos directorio destino
     if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
     {
@@ -908,9 +938,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
         fprintf(stderr, "FALLO5");
         return FALLO;
     }
-    fprintf(stderr, "Valor:%d", inodo_dest.tamEnBytesLog);
-
-    fprintf(stderr, "%s\n", entrada.nombre);
+    
     char *nombreArchivo = entrada.nombre; // HE PENSADO QUE SI BUSCAMOS ENTRADA CON EL NOMBRE NUEVO EXISTE.
     if (comprob_nuevoNombre(p_inodo_dest, inodo_dest, nombreArchivo) == FALLO)
     {
@@ -937,51 +965,24 @@ int mi_move(const char *camino, const char *caminoNuevo)
     { // Si es un directorio
         caminofinal[strlen(caminofinal) - 1] = '/';
     }
-/*
-    if (mi_creat(caminofinal, permisos) == FALLO)
-    {
-        fprintf(stderr, "FALLO7");
-        return FALLO;
-    }
-    if (buscar_entrada(caminofinal, &p_inodo_dir_dest2, &p_inodo_dest2, &p_entrada_dest2, 0, 7) == FALLO)
-    {
-        fprintf(stderr, "FALLO8");
-        return FALLO;
-    }
 
-    if (mi_write_f(p_inodo_dir_dest2, &entrada, p_entrada_dest2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
-    {
-        fprintf(stderr, "FALLO10");
-        return FALLO;
-    }
-    */
     if (mi_write_f(p_inodo_dest, &entrada, inodo_dest.tamEnBytesLog, sizeof(struct entrada)) == FALLO)
     {
         fprintf(stderr, "FALLO10");
         return FALLO;
     }
-    fprintf(stderr, "Valor:%d", inodo_dest.tamEnBytesLog);
-    /*
-    if (buscar_entrada(caminofinal, &p_inodo_dir_dest2, &p_inodo_dest2, &p_entrada_dest2, 0, 7) == FALLO)
-    {
-        fprintf(stderr, "FALLO8");
-        return FALLO;
-    }
-    if (mi_read_f(p_inodo_dir_dest2, &entrada, p_entrada_dest2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
-    {
-        fprintf(stderr, "FALLO10");
-        return FALLO;
-    }*/
-    fprintf(stderr, "nombre: %s y ninodo: %d\n", entrada.nombre,entrada.ninodo);
-    //memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
-    if (mi_unlink(camino) == FALLO)
-    {
-        fprintf(stderr, "FALLO6");
-        return FALLO;
-    }
+    
     return EXITO;
     // Leemos directorio destino
 }
+
+/**
+ * Funcionalidad extra para copiar un fichero o directorio.
+ */
+int mi_cp(const char *origen, const char *destino) {
+    
+}
+
 
 /**
  * Funcionalidad extra para eliminar un directorio y su contenido de forma recursiva.
