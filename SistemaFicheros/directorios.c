@@ -834,13 +834,12 @@ int comprob_nuevoNombre(int ninodo, struct inodo inodo, const char *nombreNuevo)
             fprintf(stderr, "[DEBUG] mi_read_f falló en la entrada %d\n", nEntrada);
             return FALLO;
         }
-        
 
         fprintf(stderr, "NombreNuevo: %s\n", entrada.nombre);
         fprintf(stderr, "NombreFicherantiguo: %s\n", nombreNuevo);
         if (strcmp(entrada.nombre, nombreNuevo) == 0)
-        {   
-            
+        {
+
             return FALLO;
         }
         nEntrada++;
@@ -859,110 +858,157 @@ int mi_move(const char *camino, const char *caminoNuevo)
     unsigned int p_inodo_dest = 0;
     unsigned int p_entrada_dest = 0;
 
+    struct inodo inodo;
     struct inodo inodo_dir;
     struct inodo inodo_dest;
     struct entrada entrada;
 
-
-    //Leemos directorio actual  
+    // Leemos directorio actual
 
     if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
     {
-        fprintf(stderr,"FALLO1");
+        fprintf(stderr, "FALLO1");
         return FALLO;
     }
+    // Primero queremos leer el tipo de archivo que queremos mover, por si es un fichero o un directorio
+    if (leer_inodo(p_inodo, &inodo) == FALLO)
+    {
+        fprintf(stderr, "FALLO2");
+        return FALLO;
+    }
+    char tipo = inodo.tipo;
+
     if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO)
     {
-        fprintf(stderr,"FALLO2");
+        fprintf(stderr, "FALLO2");
         return FALLO;
     }
     memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
     if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
-        fprintf(stderr,"FALLO3");
+        fprintf(stderr, "FALLO3");
         return FALLO;
-    } //Ahora obtenemos nombre del archivo a mover.
-
+    } // Ahora obtenemos nombre del archivo a mover.
 
     // Leemos directorio destino
     if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
     {
-        fprintf(stderr,"FALLO4");
+        fprintf(stderr, "FALLO4");
         return FALLO;
     }
     if (leer_inodo(p_inodo_dest, &inodo_dest) == FALLO)
     {
-        fprintf(stderr,"FALLO5");
+        fprintf(stderr, "FALLO5");
         return FALLO;
     }
 
     fprintf(stderr, "%s\n", entrada.nombre);
-    char * nombreArchivo = entrada.nombre;
+    char *nombreArchivo = entrada.nombre;
     if (comprob_nuevoNombre(p_inodo_dest, inodo_dest, nombreArchivo) == FALLO)
     {
-        
+
 #if DEBUGNEXT
         fprintf(stderr, RED "Error: La entrada ya existe\n" RESET);
 #endif
         return FALLO;
     }
-    if (mi_unlink(camino) == FALLO) {
-        fprintf(stderr,"FALLO6");
+    if (mi_unlink(camino) == FALLO)
+    {
+        fprintf(stderr, "FALLO6");
         return FALLO;
     }
 
-   /* if (mi_creat(caminoNuevo, 7) == FALLO) {
-        fprintf(stderr,"FALLO7");
-        return FALLO;
-    } */
+    int tam = strlen(caminoNuevo) + strlen(entrada.nombre);
+
+    if (tipo == 'd') {
+        tam++;
+        
+    }
+    char caminofinal[tam];
+    strcpy(caminofinal, caminoNuevo);
+    strcat(caminofinal, nombreArchivo);
+    if (tipo == 'd')
+    { // Si es un directorio
+        caminofinal[strlen(caminofinal)-1] = '/';
+        
+    
+    } 
+
+    /* if (mi_creat(caminoNuevo, 7) == FALLO) {
+         fprintf(stderr,"FALLO7");
+         return FALLO;
+     } */
     if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
     {
-        fprintf(stderr,"FALLO8");
+        fprintf(stderr, "FALLO8");
         return FALLO;
     }
     if (leer_inodo(p_inodo_dest, &inodo_dest) == FALLO)
     {
-        fprintf(stderr,"FALLO9");
+        fprintf(stderr, "FALLO9");
         return FALLO;
     }
-    
+
     if (mi_write_f(p_inodo_dest, &entrada, p_entrada_dest * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
-        fprintf(stderr,"FALLO10");
+        fprintf(stderr, "FALLO10");
         return FALLO;
-    } 
+    }
 
-    
-
-return EXITO;
+    return EXITO;
     // Leemos directorio destino
 }
 
-int mi_rm_r(const char *camino) {
-    unsigned int p_inodo_dir, p_inodo, p_entrada;
+/**
+ * Funcionalidad extra para eliminar un directorio y su contenido de forma recursiva.
+ *
+ * @param camino Cadena de caracteres que contiene el camino a eliminar
+ * @return EXITO si se ha eliminado correctamente, FALLO si ha habido algún error.
+ */
+int mi_rm_r(const char *camino)
+{
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+
     struct inodo inodo;
 
-    // Obtener inodo de 'camino'
-    if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO) {
+    // Buscamos el inodo de 'camino'
+    if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+    {
         return FALLO;
     }
-    if (leer_inodo(p_inodo, &inodo) == FALLO) {
+    if (leer_inodo(p_inodo, &inodo) == FALLO)
+    {
         return FALLO;
     }
 
-    // Si es directorio, recorrer entradas
-    if (inodo.tipo == 'd') {
-        int nentradas = inodo.tamEnBytesLog / sizeof(struct entrada);
-        struct entrada ent;
-        for (int i = 0; i < nentradas; i++) {
-            if (mi_read_f(p_inodo, &ent, i * sizeof(struct entrada), sizeof(struct entrada)) == FALLO) {
+    // Comprobamos que el inodo es un directorio no vacío
+    if (inodo.tipo == 'd' && inodo.tamEnBytesLog > 0)
+    {
+        int nEntradas = inodo.tamEnBytesLog / sizeof(struct entrada);
+        struct entrada entrada;
+
+        for (int i = 0; i < nEntradas; i++)
+        {
+            // Leemos la entrada del directorio
+            if (mi_read_f(p_inodo, &entrada, i * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+            {
                 return FALLO;
             }
-            // Saltar "." y ".."
-            if (strcmp(ent.nombre, ".") != 0 && strcmp(ent.nombre, "..") != 0) {
-                // Construir nuevo camino
-                char nuevo_camino[strlen(camino) + 1 + strlen(ent.nombre) + 1];
-                sprintf(nuevo_camino, "%s/%s", camino, ent.nombre);
+
+            // Llamamos recursivamente a mi_rm_r() para eliminar el contenido del directorio
+
+            // Comprobamos que no sea "." o "..", es decir, que no sea ni el propio directorio ni su padre
+            if (strcmp(entrada.nombre, ".") != 0 && strcmp(entrada.nombre, "..") != 0)
+            {
+                 // Construir nuevo camino
+                char nuevo_camino[strlen(camino) + 1 + strlen(entrada.nombre) + 1]; // se suma 1 para el '/' y 1 para el '\0'
+                
+                // Concatena en nuevo_camino la ruta completa: primero 'camino', luego '/', y finalmente 'entrada.nombre', añadiendo el terminador '\0'
+                // se usa el snprintf para evitar desbordamiento de buffer
+                snprintf(nuevo_camino, "%s/%s", camino, entrada.nombre); 
+                
                 // Recursión
                 if (mi_rm_r(nuevo_camino) == FALLO) {
                     return FALLO;
@@ -971,8 +1017,9 @@ int mi_rm_r(const char *camino) {
         }
     }
 
-    // Borrar el fichero o directorio (ahora vacío)
-    if (mi_unlink(camino) == FALLO) {
+    // Llamamos a mi_unlink() para eliminar la entrada del directorio
+    if (mi_unlink(camino) == FALLO)
+    {
         return FALLO;
     }
 
