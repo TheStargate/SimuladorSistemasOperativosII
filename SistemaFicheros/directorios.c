@@ -160,7 +160,7 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
         {
         case 0: // modo consulta
             mostrar_error_buscar_entrada(ERROR_NO_EXISTE_ENTRADA_CONSULTA);
-            return FALLO;
+            return FALLO; //Si falla
         case 1: // modo escritura
             // Creamos la entrada en el directorio referenciado por *p_inodo_dir
             // si es fichero no permitir escritura
@@ -878,6 +878,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
         return FALLO;
     }
     char tipo = inodo.tipo;
+    char permisos = inodo.permisos;
 
     if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO)
     {
@@ -926,6 +927,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
         
     }
     tam++;
+    fprintf(stderr, "%d", tam);
     char caminofinal[tam];
     strcpy(caminofinal, caminoNuevo);
     strcat(caminofinal, nombreArchivo);
@@ -936,11 +938,11 @@ int mi_move(const char *camino, const char *caminoNuevo)
     
     } 
 
-     if (mi_creat(caminofinal, 7) == FALLO) {
+     if (mi_creat(caminofinal, permisos) == FALLO) {
          fprintf(stderr,"FALLO7");
          return FALLO;
      } 
-    if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
+    if (buscar_entrada(caminofinal, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
     {
         fprintf(stderr, "FALLO8");
         return FALLO;
@@ -951,7 +953,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
         return FALLO;
     } */
 
-    if (mi_write_f(p_inodo_dest, &entrada, p_entrada_dest * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    if (mi_write_f(p_inodo_dir_dest, &entrada, p_entrada_dest * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
         fprintf(stderr, "FALLO10");
         return FALLO;
