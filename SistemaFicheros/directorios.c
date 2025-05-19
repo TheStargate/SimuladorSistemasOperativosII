@@ -1068,6 +1068,46 @@ int mi_cp_f(const char *origen, const char *destino)
 
 int mi_cp(const char *origen, const char *destino)
 {
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+
+    unsigned int p_inodo_dir_dest = 0;
+    unsigned int p_inodo_dest = 0;
+    unsigned int p_entrada_dest = 0;
+
+    struct inodo inodo;
+    struct inodo inodo_dir;
+    struct inodo inodo_dest;
+
+    struct entrada entrada;
+
+    int tambuffer = BLOCKSIZE * 4;
+
+    char buffer_texto[tambuffer];
+    char buffer_cmp [tambuffer];
+    int offset = 0;
+    int totalBytesLeidos = 0;
+
+    // Leemos directorio actual
+
+    if (buscar_entrada(origen, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+    {
+        return FALLO;
+    }
+    // Primero queremos leer el tipo de archivo que queremos mover, por si es un fichero o un directorio
+    if (leer_inodo(p_inodo, &inodo) == FALLO)
+    {
+        return FALLO;
+    }
+
+    char tipo = inodo.tipo;
+    char permisos = inodo.permisos;
+
+    if (tipo == 'f') {
+        mi_cp_f(origen, destino);
+    }
+    
 }
 
 /**
