@@ -861,6 +861,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
     struct inodo inodo;
     struct inodo inodo_dir;
     struct inodo inodo_dest;
+    struct inodo inodo_dir_dest;
     struct entrada entrada;
 
     // Leemos directorio actual
@@ -903,7 +904,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
     }
 
     fprintf(stderr, "%s\n", entrada.nombre);
-    char *nombreArchivo = entrada.nombre;
+    char *nombreArchivo = entrada.nombre; // HE PENSADO QUE SI BUSCAMOS ENTRADA CON EL NOMBRE NUEVO EXISTE.
     if (comprob_nuevoNombre(p_inodo_dest, inodo_dest, nombreArchivo) == FALLO)
     {
 
@@ -924,6 +925,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
         tam++;
         
     }
+    tam++;
     char caminofinal[tam];
     strcpy(caminofinal, caminoNuevo);
     strcat(caminofinal, nombreArchivo);
@@ -934,20 +936,20 @@ int mi_move(const char *camino, const char *caminoNuevo)
     
     } 
 
-    /* if (mi_creat(caminoNuevo, 7) == FALLO) {
+     if (mi_creat(caminofinal, 7) == FALLO) {
          fprintf(stderr,"FALLO7");
          return FALLO;
-     } */
+     } 
     if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
     {
         fprintf(stderr, "FALLO8");
         return FALLO;
     }
-    if (leer_inodo(p_inodo_dest, &inodo_dest) == FALLO)
+   /* if (leer_inodo(p_inodo_dir_dest, &inodo_dir_dest) == FALLO)
     {
         fprintf(stderr, "FALLO9");
         return FALLO;
-    }
+    } */
 
     if (mi_write_f(p_inodo_dest, &entrada, p_entrada_dest * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
@@ -965,6 +967,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
  * @param camino Cadena de caracteres que contiene el camino a eliminar
  * @return EXITO si se ha eliminado correctamente, FALLO si ha habido algún error.
  */
+/*
 int mi_rm_r(const char *camino)
 {
     unsigned int p_inodo_dir = 0;
@@ -1025,3 +1028,4 @@ int mi_rm_r(const char *camino)
 
     return EXITO;
 }
+*/
