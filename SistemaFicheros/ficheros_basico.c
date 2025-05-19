@@ -788,29 +788,6 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
         nRangoBL = obtener_nRangoBL(inodo, nBL, &ptr); // 0:D, 1:I0, 2:I1, 3:I2
         if (nRangoBL < 0)
             return FALLO;
-
-        //Va aquí la mejora 1??? (tengo que probar esto)
-      /* MEJORA DEL ALGORITMO 1 de 2.
-		Si uno de los punteros del inodo apunta a 0 se salta al siguiente rango.*/
-        if (!ptr)
-        {
-           if (nRangoBL == 1)
-           {
-              nBL = INDIRECTOS0 - 1;
-              continue;
-           }
-           else if (nRangoBL == 2)
-           {
-              nBL = INDIRECTOS1 - 1;
-              continue;
-           }
-           else if (nRangoBL == 3)
-           {
-              break;
-           }
-        }
-        // fin de mejora 1 (falta probarlo)
-
         nivel_punteros = nRangoBL; // el nivel_punteros +alto cuelga del inodo
 
         while (ptr > 0 && nivel_punteros > 0) // cuelgan bloques de punteros
@@ -900,18 +877,17 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
                             int salto = (INDIRECTOS2 - DIRECTOS) - modulo;
                             nBL += salto - 1;
                         }
+                            */
 
 #if DEBUGN6
                         fprintf(stderr, GREEN "\n[liberar_bloques_inodo()→ Saltamos del BL %d al BL %d]" RESET, nBLOriginal, nBL);
 #endif
-                        */
 
                         if (nivel_punteros == nRangoBL)
                         {
                             inodo->punterosIndirectos[nRangoBL - 1] = 0;
                         }
                         nivel_punteros++;
-                        
                     }
                     else
                     {
@@ -931,7 +907,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
         }
         else if (nBL >= DIRECTOS)
         {
-
+            /*
             // MEJORA 2:  saltar los BLs que no se necesite explorar
             // cuando se pone a 0 un puntero a bloque de punteros
 
@@ -964,7 +940,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
             {
                 nBL += (salto * NPUNTEROS * NPUNTEROS) - 1;
             }
-
+            */
 #if DEBUGN6
             fprintf(stderr, BLUE "\n[liberar_bloques_inodo()→ Saltamos del BL %d al BL %d]" RESET, nBLOriginal, nBL);
 #endif

@@ -16,7 +16,6 @@ int main(int argc, char **argv)
     if (strcmp(camino, "/") == 0)
     {
         fprintf(stderr, RED "ERROR: No se puede borrar la raiz del sistema de ficheros\n" RESET);
-        bumount();
         return FALLO;
     }
 

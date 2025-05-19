@@ -32,7 +32,6 @@ int main (int argc, char **argv) {
 
    // printf("Archivo borrado correctamente\n");
 
-    // Desmontamos el disco
     bumount();
     
 }
