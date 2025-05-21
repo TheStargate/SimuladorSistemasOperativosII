@@ -973,7 +973,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
  * @param origen Ruta en el disco de origen (puede ser fichero o directorio)
  * @param destino Ruta de destino, debe terminar siempre en '/'
  */
-int mi_cp_f(const char *origen, const char *destino)
+/*int mi_cp_f(const char *origen, const char *destino)
 {
 
     unsigned int p_inodo_dir = 0;
@@ -1064,6 +1064,72 @@ int mi_cp_f(const char *origen, const char *destino)
        escritos = mi_write(caminofinal,buffer_texto, offset, tambuffer); 
     }
     }
+}*/
+
+
+int mi_copiar_f (const char *origen, const char *destino) {
+
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+
+    unsigned int p_inodo_dir_dest = 0;
+    unsigned int p_inodo_dest = 0;
+    unsigned int p_entrada_dest = 0;
+
+    struct inodo inodo_origen;
+    struct inodo inodo_dest;
+
+    struct entrada entrada;
+
+    // Buscamos camino origen a ver si existe y si es así para obtener su inodo correspondiente.
+    if (buscar_entrada(origen, &p_inodo_dir ,&p_inodo, &p_entrada, 0, 7) == FALLO) {
+        return FALLO;
+    }
+    // Leemos el inodo hijo para obtener datos como los permisos que tiene para luego poderlo usar.
+    
+    if (leer_inodo(p_inodo, &inodo_origen) == FALLO) {
+        return FALLO;
+    }
+    char permisos = inodo_origen.permisos;
+
+    // Ahora queremos guardar la entrada asociada al fichero que está en el inodo del directorio padre.
+
+    if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO) {
+        return FALLO;
+    }
+
+    //Ahora ya tenemos el nombre del fichero y lo concatenaremos con camino destino para poder crear la nueva entrada en el destino
+
+    int tam = strlen(destino) + strlen(entrada.nombre) + 1;
+    char caminofinal[tam];
+    strcpy(caminofinal, destino);
+    strcat(caminofinal, entrada.nombre);
+
+    // Camino final tiene el camino con el nombre del fichero concatenado.
+    // Creamos la nueva entrada en el directorio destino y con los mismos permisos que en el origen.
+
+    if (mi_creat(caminofinal, permisos) == FALLO) {
+        return FALLO;
+    }
+    // Obtenemos los datos respecto a los inodos del nuevo camino.
+    if (buscar_entrada(caminofinal, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0 , permisos) == FALLO) {
+        return FALLO;
+    }
+
+    fprintf(stderr, "inodo padre: %d\n", p_inodo_dir_dest);
+    fprintf (stderr, "inodo: %d\n", p_inodo_dest);
+
+    // Escribimos en la nueva entrada del directorio destino la entrada original.
+    /*if (mi_write_f(p_inodo_dir_dest, &entrada, p_entrada_dest * sizeof(struct entrada), sizeof(struct entrada)) == FALLO) {
+        return FALLO;
+    } */
+
+
+
+
+    
+    return EXITO;
 }
 
 int mi_cp(const char *origen, const char *destino)
@@ -1105,7 +1171,7 @@ int mi_cp(const char *origen, const char *destino)
     char permisos = inodo.permisos;
 
     if (tipo == 'f') {
-        mi_cp_f(origen, destino);
+        mi_copiar_f(origen, destino);
     }
     
 }
