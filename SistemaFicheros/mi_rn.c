@@ -1,9 +1,16 @@
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Programa que renombra un fichero o directorio
+ */
+
 #include <stdio.h>
 #include "directorios.h"
 
 int main(int argc, char **argv)
 {
+
     if (argc != 4) {
+        fprintf(stderr, RED "Número de argumentos incorrecto. Sintaxis: ./mi_rn <disco> </ruta/antiguo> <nuevo>\n" RESET);
         return FALLO;
     }
      char * disco = argv[1];
@@ -17,5 +24,4 @@ int main(int argc, char **argv)
         return FALLO;
      }
      bumount();
-     return 0;
 }

@@ -789,6 +789,7 @@ int mi_rename(const char *camino, const char *nombreNuevo)
     struct inodo inodo_dir;
     struct entrada entrada;
 
+    // Buscamos el antiguo nombre (en camino)
     if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
     {
         return FALLO;
@@ -797,7 +798,8 @@ int mi_rename(const char *camino, const char *nombreNuevo)
     {
         return FALLO;
     }
-    // Comprueba si existe el nombre ya
+
+    // Comprueba si el nuevo nombre existe ya
     if (comprob_nuevoNombre(p_inodo_dir, inodo_dir, nombreNuevo) == FALLO)
     {
 #if DEBUGNEXT
@@ -808,12 +810,15 @@ int mi_rename(const char *camino, const char *nombreNuevo)
 
     memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
 
+    // Leemos para cambiar el nombre de la entrada
     if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
         return FALLO;
     }
 
     strcpy(entrada.nombre, nombreNuevo);
+
+    // Volvemos a escribir con el nombre cambiado
     if (mi_write_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
         return FALLO;
@@ -861,12 +866,12 @@ int mi_move(const char *camino, const char *caminoNuevo)
 
     struct entrada entrada;
 
-    // Leemos directorio actual
-
+    // Leemos el camino que queremos mover
     if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
     {
         return FALLO;
     }
+
     // Primero queremos leer el tipo de archivo que queremos mover, por si es un fichero o un directorio
     if (leer_inodo(p_inodo, &inodo) == FALLO)
     {
@@ -881,59 +886,60 @@ int mi_move(const char *camino, const char *caminoNuevo)
     memset(&entrada, 0, BLOCKSIZE / sizeof(struct entrada));
     if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
-
         return FALLO;
-    } // Ahora obtenemos nombre del archivo a mover.
+    }
+
+    // Ahora obtenemos nombre del archivo a mover.
+    char *nombreArchivo = entrada.nombre;
 
     // Leemos directorio destino
     if (buscar_entrada(caminoNuevo, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, 7) == FALLO)
     {
-
         return FALLO;
     }
     if (leer_inodo(p_inodo_dest, &inodo_dest) == FALLO)
     {
-
         return FALLO;
     }
 
-    char *nombreArchivo = entrada.nombre; // HE PENSADO QUE SI BUSCAMOS ENTRADA CON EL NOMBRE NUEVO EXISTE.
     if (comprob_nuevoNombre(p_inodo_dest, inodo_dest, nombreArchivo) == FALLO)
     {
-
 #if DEBUGNEXT
         fprintf(stderr, RED "Error: La entrada ya existe\n" RESET);
 #endif
         return FALLO;
     }
 
+    // Tamaño del nuevo directorio al moverlo
     int tam = strlen(caminoNuevo) + strlen(entrada.nombre);
 
     if (tipo == 'd')
     {
         tam++;
     }
-    tam++;
+    tam++; // ???
+
+    // Creamos el nuevo camino
     char caminofinal[tam];
     strcpy(caminofinal, caminoNuevo);
     strcat(caminofinal, nombreArchivo);
     if (tipo == 'd')
-    { // Si es un directorio
+    { // Si queremos mover un directorio
         caminofinal[strlen(caminofinal) - 1] = '/';
     }
 
+    // Copiamos el fichero/directorio al nuevo directorio
     if (mi_write_f(p_inodo_dest, &entrada, inodo_dest.tamEnBytesLog, sizeof(struct entrada)) == FALLO)
     {
-
         return FALLO;
     }
 
-    // BORRAR ENTRADA
+    // BORRAR ENTRADA ORIGINAL
 
     unsigned int n_Entradas_Dir = inodo_dir.tamEnBytesLog / sizeof(struct entrada);
 
     if (p_entrada == n_Entradas_Dir - 1)
-    { // Le restamos el tamaño de una entrada para posicionarnos justo encima de la últime entrada
+    { // Le restamos el tamaño de una entrada para posicionarnos justo encima de la última entrada del inodo
         if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
         {
             return FALLO;
@@ -960,12 +966,12 @@ int mi_move(const char *camino, const char *caminoNuevo)
         }
     }
 
+    // Escribimos el inodo con el nombre de la entrada modificada
     inodo.ctime = time(NULL);
     if (escribir_inodo(p_inodo, &inodo) == FALLO)
         return FALLO;
 
     return EXITO;
-    // Leemos directorio destino
 }
 
 /**
@@ -1037,7 +1043,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
     char caminofinal[tam];
     strcpy(caminofinal, destino);
     strcat(caminofinal, entrada.nombre);
-    
+
     if (mi_write_f(p_inodo_dest, &entrada, inodo_dest.tamEnBytesLog, sizeof(struct entrada)) == FALLO)
     {
 
@@ -1049,7 +1055,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
     int leidos = mi_read(origen, buffer_texto, offset, tambuffer);
     int escritos;
     if (strcmp (buffer_texto,buffer_cmp) != 0) {
-       escritos = mi_write(caminofinal,buffer_texto, offset, tambuffer); 
+       escritos = mi_write(caminofinal,buffer_texto, offset, tambuffer);
     }
 
     // Leemos mientras quede contenido
@@ -1061,13 +1067,13 @@ int mi_move(const char *camino, const char *caminoNuevo)
         memset(buffer_texto, 0, tambuffer);
         leidos = mi_read(origen, buffer_texto, offset, tambuffer);
         if (strcmp (buffer_texto,buffer_cmp) != 0) {
-       escritos = mi_write(caminofinal,buffer_texto, offset, tambuffer); 
+       escritos = mi_write(caminofinal,buffer_texto, offset, tambuffer);
     }
     }
 }*/
 
-
-int mi_copiar_f (const char *origen, const char *destino) {
+int mi_copiar_f(const char *origen, const char *destino)
+{
 
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
@@ -1083,23 +1089,26 @@ int mi_copiar_f (const char *origen, const char *destino) {
     struct entrada entrada;
 
     // Buscamos camino origen a ver si existe y si es así para obtener su inodo correspondiente.
-    if (buscar_entrada(origen, &p_inodo_dir ,&p_inodo, &p_entrada, 0, 7) == FALLO) {
+    if (buscar_entrada(origen, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+    {
         return FALLO;
     }
     // Leemos el inodo hijo para obtener datos como los permisos que tiene para luego poderlo usar.
-    
-    if (leer_inodo(p_inodo, &inodo_origen) == FALLO) {
+
+    if (leer_inodo(p_inodo, &inodo_origen) == FALLO)
+    {
         return FALLO;
     }
     char permisos = inodo_origen.permisos;
 
     // Ahora queremos guardar la entrada asociada al fichero que está en el inodo del directorio padre.
 
-    if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO) {
+    if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
         return FALLO;
     }
 
-    //Ahora ya tenemos el nombre del fichero y lo concatenaremos con camino destino para poder crear la nueva entrada en el destino
+    // Ahora ya tenemos el nombre del fichero y lo concatenaremos con camino destino para poder crear la nueva entrada en el destino
 
     int tam = strlen(destino) + strlen(entrada.nombre) + 1;
     char caminofinal[tam];
@@ -1109,26 +1118,24 @@ int mi_copiar_f (const char *origen, const char *destino) {
     // Camino final tiene el camino con el nombre del fichero concatenado.
     // Creamos la nueva entrada en el directorio destino y con los mismos permisos que en el origen.
 
-    if (mi_creat(caminofinal, permisos) == FALLO) {
+    if (mi_creat(caminofinal, permisos) == FALLO)
+    {
         return FALLO;
     }
     // Obtenemos los datos respecto a los inodos del nuevo camino.
-    if (buscar_entrada(caminofinal, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0 , permisos) == FALLO) {
+    if (buscar_entrada(caminofinal, &p_inodo_dir_dest, &p_inodo_dest, &p_entrada_dest, 0, permisos) == FALLO)
+    {
         return FALLO;
     }
 
     fprintf(stderr, "inodo padre: %d\n", p_inodo_dir_dest);
-    fprintf (stderr, "inodo: %d\n", p_inodo_dest);
+    fprintf(stderr, "inodo: %d\n", p_inodo_dest);
 
     // Escribimos en la nueva entrada del directorio destino la entrada original.
     /*if (mi_write_f(p_inodo_dir_dest, &entrada, p_entrada_dest * sizeof(struct entrada), sizeof(struct entrada)) == FALLO) {
         return FALLO;
     } */
 
-
-
-
-    
     return EXITO;
 }
 
@@ -1151,7 +1158,7 @@ int mi_cp(const char *origen, const char *destino)
     int tambuffer = BLOCKSIZE * 4;
 
     char buffer_texto[tambuffer];
-    char buffer_cmp [tambuffer];
+    char buffer_cmp[tambuffer];
     int offset = 0;
     int totalBytesLeidos = 0;
 
@@ -1170,10 +1177,10 @@ int mi_cp(const char *origen, const char *destino)
     char tipo = inodo.tipo;
     char permisos = inodo.permisos;
 
-    if (tipo == 'f') {
+    if (tipo == 'f')
+    {
         mi_copiar_f(origen, destino);
     }
-    
 }
 
 /**
@@ -1190,11 +1197,14 @@ int E_mi_rm_r(const char *camino)
 
     struct inodo inodo;
 
+    fprintf(stderr, ORANGE "%s | ", camino);
+
     // Buscamos el inodo de 'camino'
     if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
     {
         return FALLO;
     }
+
     if (leer_inodo(p_inodo, &inodo) == FALLO)
     {
         return FALLO;
@@ -1228,7 +1238,10 @@ int E_mi_rm_r(const char *camino)
 
                 // Construimos el nuevo camino
                 strcpy(nuevo_camino, camino);
-                strcat(nuevo_camino, "/");
+                if (camino[strlen(camino) - 1] != '/')
+                {
+                    strcat(nuevo_camino, "/");
+                }
                 strcat(nuevo_camino, entrada.nombre);
 
                 // Llamamos a mi_rm_r() de forma recursiva

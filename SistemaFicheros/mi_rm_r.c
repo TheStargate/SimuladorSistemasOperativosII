@@ -1,3 +1,8 @@
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Programa que borra recursivamente un directorio no vacío
+ */
+
 #include <stdio.h>
 #include "directorios.h"
 
@@ -16,8 +21,8 @@ int main (int argc, char **argv) {
         bumount();
         return FALLO;
     }
-    if (camino[strlen(camino)-1] == '/') {
-        fprintf(stderr, RED "ERROR: no es un fichero" RESET);
+    if (camino[strlen(camino)-1] != '/') {
+        fprintf(stderr, RED "ERROR: no es un directorio" RESET);
         return FALLO;
     }
 

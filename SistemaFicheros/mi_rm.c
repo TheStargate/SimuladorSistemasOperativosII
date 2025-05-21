@@ -1,3 +1,8 @@
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Programa que borra un fichero
+ */
+
 #include <stdio.h>
 #include "directorios.h"
 

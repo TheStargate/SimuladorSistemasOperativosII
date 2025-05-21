@@ -1,3 +1,7 @@
+/*
+ * Autores: [Aaron Satyar Daghigh-Nia Tudor, Jaume Juan Huguet, Miguel Sansó Febrer]
+ * Descripción: Programa que copia un fichero o directorio
+ */
 
 #include <stdio.h>
 #include "directorios.h"
