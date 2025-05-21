@@ -17,6 +17,10 @@
  */
 int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offset, unsigned int nbytes)
 {
+
+#if DEBUGNEXT
+        printf(GRAY "[mi_write_f()→ Escritura en inodo %d]\n" RESET, ninodo);
+#endif
     struct inodo inodo;
     unsigned char buf_bloque[BLOCKSIZE];
     int nbfisico;
