@@ -19,7 +19,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 {
 
 #if DEBUGNEXT
-        printf(GRAY "[mi_write_f()→ Escritura en inodo %d]\n" RESET, ninodo);
+    printf(GRAY "[mi_write_f()→ Escritura en inodo %d]\n" RESET, ninodo);
 #endif
     struct inodo inodo;
     unsigned char buf_bloque[BLOCKSIZE];
@@ -158,6 +158,8 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     if (primerBL == ultimoBL)
     {
 
+        
+
         int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 0);
         if (nbfisico != FALLO)
         {
@@ -166,17 +168,19 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
             memcpy(buf_original, buf_bloque + desp1, nbytes);
 
-            bytesLeidos = nbytes;
         }
+            bytesLeidos = nbytes;
+
     }
     else // Contemplar el caso en que el fichero/directorio ocupe más de un bloque lógico
     {
+
+      
 
         // FASE 1
         nbfisico = traducir_bloque_inodo(ninodo, primerBL, 0);
         if (nbfisico != FALLO)
         {
-
             if (bread(nbfisico, buf_bloque) == FALLO)
                 return FALLO;
             memcpy(buf_original, buf_bloque + desp1, BLOCKSIZE - desp1);
@@ -241,8 +245,6 @@ int mi_stat_f(unsigned int ninodo, struct STAT *p_stat)
     p_stat->tamEnBytesLog = inodo.tamEnBytesLog;
     p_stat->tipo = inodo.tipo;
 
-    
-
     return EXITO;
 }
 
@@ -293,40 +295,48 @@ int mi_truncar_f(unsigned int ninodo, unsigned int nbytes)
 {
     struct inodo inodo;
     int primerBL, bloques_liberados;
-    
+
     // Leer el inodo
-    if (leer_inodo(ninodo, &inodo) == FALLO) {
+    if (leer_inodo(ninodo, &inodo) == FALLO)
+    {
         return FALLO;
     }
-    
+
     // Comprobar permisos de escritura
-    if ((inodo.permisos & 2) != 2) {
+    if ((inodo.permisos & 2) != 2)
+    {
         return FALLO;
     }
-    
+
     // Comprobar que nbytes no es mayor que el tamaño actual del fichero
-    if (nbytes > inodo.tamEnBytesLog) {
+    if (nbytes > inodo.tamEnBytesLog)
+    {
         return FALLO;
     }
-    
+
     // Si nbytes es igual al tamaño actual, no hay nada que hacer
-    if (nbytes == inodo.tamEnBytesLog) {
-        return 0;  // No se liberan bloques
+    if (nbytes == inodo.tamEnBytesLog)
+    {
+        return 0; // No se liberan bloques
     }
-    
+
     // Calcular el primer bloque lógico a liberar
-    if (nbytes % BLOCKSIZE == 0) {
+    if (nbytes % BLOCKSIZE == 0)
+    {
         primerBL = nbytes / BLOCKSIZE;
-    } else {
+    }
+    else
+    {
         primerBL = nbytes / BLOCKSIZE + 1;
     }
-    
+
     // Liberar los bloques a partir de primerBL
     bloques_liberados = liberar_bloques_inodo(primerBL, &inodo);
-    if (bloques_liberados < 0) {
+    if (bloques_liberados < 0)
+    {
         return FALLO;
     }
-    
+
     // Actualizar tiempos
     inodo.mtime = time(NULL);
     inodo.ctime = time(NULL);
@@ -336,12 +346,13 @@ int mi_truncar_f(unsigned int ninodo, unsigned int nbytes)
 
     // Actualizar el número de bloques ocupados
     inodo.numBloquesOcupados -= bloques_liberados;
-    
+
     // Guardar el inodo actualizado
-    if (escribir_inodo(ninodo, &inodo) == FALLO) {
+    if (escribir_inodo(ninodo, &inodo) == FALLO)
+    {
         return FALLO;
     }
-    
+
     // Devolver la cantidad de bloques liberados
     return bloques_liberados;
 }

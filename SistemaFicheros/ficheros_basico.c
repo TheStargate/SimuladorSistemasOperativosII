@@ -569,7 +569,7 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
 
     } // Al salir de este bucle ya estamos al nivel de datos
     if (ptr == 0)
-    {                      // No existe bloque de datos
+    { // No existe bloque de datos
         if (reservar == 0) // Error lectura ∄ bloque
         {
             return FALLO;
