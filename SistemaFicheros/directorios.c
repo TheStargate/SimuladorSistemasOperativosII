@@ -973,7 +973,6 @@ int mi_move(const char *camino, const char *caminoNuevo)
     return EXITO;
 }
 
-
 int mi_copiar_f(const char *origen, const char *destino)
 {
 
@@ -986,7 +985,6 @@ int mi_copiar_f(const char *origen, const char *destino)
     unsigned int p_entrada_dest = 0;
 
     struct inodo inodo_origen;
-    struct inodo inodo_dest;
 
     struct entrada entrada;
 
@@ -1038,11 +1036,11 @@ int mi_copiar_f(const char *origen, const char *destino)
     }
 
     // Limpiamos el buffer
-    
+
     memset(buffer_texto, 0, tambuffer);
     memset(buffer_cmp, 0, tambuffer);
     int leidos = mi_read(origen, buffer_texto, offset, tambuffer);
-    
+
     int escritos = 0;
 
     // Leemos y escribimos mientras quede contenido
@@ -1058,17 +1056,14 @@ int mi_copiar_f(const char *origen, const char *destino)
         offset += tambuffer;
         memset(buffer_texto, 0, tambuffer);
         leidos = mi_read(origen, buffer_texto, offset, tambuffer);
-        
-        
     }
-
-    
 
     return EXITO;
 }
 
-int mi_cp(const char *origen, const char *destino)
+/*int mi_copiar_d(const char *origen, const char *destino)
 {
+
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
@@ -1083,12 +1078,83 @@ int mi_cp(const char *origen, const char *destino)
 
     struct entrada entrada;
 
-    int tambuffer = BLOCKSIZE * 4;
+    if (buscar_entrada(origen, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
+    {
+        return FALLO;
+    }
 
-    char buffer_texto[tambuffer];
-    char buffer_cmp[tambuffer];
-    int offset = 0;
-    int totalBytesLeidos = 0;
+    if (leer_inodo(p_inodo, &inodo) == FALLO)
+    {
+        return FALLO;
+    }
+
+    if (mi_read_f(p_inodo_dir, &entrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        return FALLO;
+    }
+    struct entrada buffer_entradas[BLOCKSIZE / sizeof(struct entrada)];
+    memset(buffer_entradas, 0, sizeof(buffer_entradas));
+    int n;
+
+    int nbytes_leidos = mi_read_f(p_inodo, buffer_entradas, 0, inodo.tamEnBytesLog);
+    if (nbytes_leidos == FALLO)
+        return FALLO;
+    n = nbytes_leidos / sizeof(struct entrada);
+
+    int tam = strlen(destino) + strlen(entrada.nombre); // Para '/' y para caracter nulo;
+    tam += 2;
+
+    // Reservamos memoria para el nuevo camino
+    char *caminofinal = malloc(tam);
+    if (!caminofinal)
+        return FALLO;
+
+    fprintf(stderr, "Longitud: %d\n", strlen(caminofinal));
+    strcpy(caminofinal, destino);
+    fprintf(stderr, "Longitud: %d\n", strlen(caminofinal));
+    strcat(caminofinal, entrada.nombre);
+    fprintf(stderr, "Longitud: %d\n", strlen(caminofinal));
+    strcat(caminofinal, " ");
+    // Si queremos mover un directorio
+    caminofinal[strlen(caminofinal) - 1] = '/';
+    int a = strlen(destino);
+    int b = strlen(entrada.nombre);
+    int c = strlen(caminofinal);
+    int d = tam;
+    fprintf(stderr, "Nombre: %s\n", entrada.nombre);
+    fprintf(stderr, ORANGE "CAMINO FINAL %s || destino: %d, entrda: %d caminofinal: %d, tamaño: %d" RESET, caminofinal, a, b, c, d);
+
+    // Vamos iterando todas las entradas del directorio
+    for (int i = 0; i < n; i++)
+    {
+        if (leer_inodo(buffer_entradas[i].ninodo, &inodo) == FALLO)
+            return FALLO;
+
+        if (inodo.tipo == 'd')
+        { // Si es un directorio, llamamos al método recursivamente
+            mi_copiar_d(origen, caminofinal);
+        }
+        else if (inodo.tipo == 'f')
+        { // Si es un fichero, llamamos al método para copiar un fichero
+            mi_copiar_f(origen, caminofinal);
+        }
+    }
+
+    // Liberamos la memoria del nuevo camino
+    free(caminofinal);
+
+    mi_copiar_f(origen, destino);
+
+    return EXITO;
+}
+*/
+int mi_cp(const char *origen, const char *destino)
+{
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+
+    struct inodo inodo;
 
     // Leemos directorio actual
 
@@ -1103,12 +1169,17 @@ int mi_cp(const char *origen, const char *destino)
     }
 
     char tipo = inodo.tipo;
-    char permisos = inodo.permisos;
 
     if (tipo == 'f')
     {
         mi_copiar_f(origen, destino);
     }
+    else
+    {
+       // mi_copiar_d(origen, destino);
+    }
+
+    return EXITO;
 }
 
 /**
