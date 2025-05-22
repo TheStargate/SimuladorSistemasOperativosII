@@ -609,6 +609,8 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
 #endif
     }
 
+    fprintf(stderr, ORANGE "holaaa %d | %d" RESET, p_inodo, offset);
+
     // Escribimos los datos en el fichero
     if ((bytesLeidos = mi_read_f(p_inodo, buf, offset, nbytes)) == FALLO)
     {
@@ -1087,7 +1089,7 @@ int mi_copiar_f(const char *origen, const char *destino)
 
     struct entrada entrada;
 
-    int tambuffer = BLOCKSIZE * 4;
+    int tambuffer = BLOCKSIZE;
 
     char buffer_texto[tambuffer];
     char buffer_cmp[tambuffer];
@@ -1101,7 +1103,6 @@ int mi_copiar_f(const char *origen, const char *destino)
         return FALLO;
     }
     // Leemos el inodo hijo para obtener datos como los permisos que tiene para luego poderlo usar.
-
     if (leer_inodo(p_inodo, &inodo_origen) == FALLO)
     {
         return FALLO;
@@ -1149,20 +1150,23 @@ int mi_copiar_f(const char *origen, const char *destino)
     int leidos = mi_read(origen, buffer_texto, offset, tambuffer);
     int escritos = 0;
 
-    // Leemos mientras quede contenido
+    // Leemos y escribimos mientras quede contenido
     while (leidos > 0)
     {
         if (memcmp(buffer_texto, buffer_cmp, leidos) != 0)
         {
-            escritos = mi_write(caminofinal, buffer_texto, offset, tambuffer);
+            escritos = mi_write(caminofinal, buffer_texto, offset, leidos);
         }
+
         write(1, buffer_texto, leidos);
         totalBytesLeidos += leidos;
         totalBytesescritos += escritos;
         offset += tambuffer;
         memset(buffer_texto, 0, tambuffer);
         leidos = mi_read(origen, buffer_texto, offset, tambuffer);
+        fprintf(stderr, "lesfgidos : %d\n", leidos);
     }
+
     fprintf(stderr, "leidos : %d\n", totalBytesLeidos);
     fprintf(stderr, "escritos : %d\n", totalBytesescritos);
 
