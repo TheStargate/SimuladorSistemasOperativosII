@@ -843,9 +843,8 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
 #endif
                         // MEJORA 1 : Saltar los bloques lógicos que ya no es necesario explorar
                         // al haber eliminado un bloque de punteros
-#if DEBUGN6
                         int nBLOriginal = nBL + 1;
-#endif
+
                         if (nivel_punteros == 1)
                         {
                             // Calculamos el módulo a partir del bloque actual pamedir el número de bloques a saltar
@@ -913,6 +912,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
 #if DEBUGN6
                                 fprintf(stderr, ORANGE "\n[liberar_bloques_inodo()→ salvado BF %d de punteros_nivel%d correspondiente al BL %d]" RESET, ptr, nivel_punteros, nBL);
 #endif
+                                bloque_modificado[nivel_punteros - 1] = 0;
                             }
                         }
 

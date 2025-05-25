@@ -802,9 +802,7 @@ int mi_rename(const char *camino, const char *nombreNuevo)
     // Comprueba si el nuevo nombre existe ya
     if (comprob_nuevoNombre(p_inodo_dir, inodo_dir, nombreNuevo) == FALLO)
     {
-#if DEBUGNEXT
         fprintf(stderr, RED "Error: La entrada ya existe\n" RESET);
-#endif
         return FALLO;
     }
 
@@ -903,9 +901,7 @@ int mi_move(const char *camino, const char *caminoNuevo)
 
     if (comprob_nuevoNombre(p_inodo_dest, inodo_dest, nombreArchivo) == FALLO)
     {
-#if DEBUGNEXT
         fprintf(stderr, RED "Error: La entrada ya existe\n" RESET);
-#endif
         return FALLO;
     }
 
@@ -1061,21 +1057,14 @@ int mi_copiar_f(const char *origen, const char *destino)
     return EXITO;
 }
 
-/*int mi_copiar_d(const char *origen, const char *destino)
+int mi_copiar_d(const char *origen, const char *destino)
 {
 
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
 
-    unsigned int p_inodo_dir_dest = 0;
-    unsigned int p_inodo_dest = 0;
-    unsigned int p_entrada_dest = 0;
-
     struct inodo inodo;
-    struct inodo inodo_dir;
-    struct inodo inodo_dest;
-
     struct entrada entrada;
 
     if (buscar_entrada(origen, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) == FALLO)
@@ -1092,62 +1081,48 @@ int mi_copiar_f(const char *origen, const char *destino)
     {
         return FALLO;
     }
+
     struct entrada buffer_entradas[BLOCKSIZE / sizeof(struct entrada)];
     memset(buffer_entradas, 0, sizeof(buffer_entradas));
-    int n;
 
     int nbytes_leidos = mi_read_f(p_inodo, buffer_entradas, 0, inodo.tamEnBytesLog);
     if (nbytes_leidos == FALLO)
         return FALLO;
-    n = nbytes_leidos / sizeof(struct entrada);
+    int n_entradas = nbytes_leidos / sizeof(struct entrada);
 
-    int tam = strlen(destino) + strlen(entrada.nombre); // Para '/' y para caracter nulo;
-    tam += 2;
+    // Creamos el nuevo camino de destino
+    char caminofinal[1024];
+    snprintf(caminofinal, sizeof(caminofinal), "%s%s/", destino, entrada.nombre);
 
-    // Reservamos memoria para el nuevo camino
-    char *caminofinal = malloc(tam);
-    if (!caminofinal)
+    // Crear directorio destino
+    if (mi_creat(caminofinal, inodo.permisos) == FALLO)
         return FALLO;
 
-    fprintf(stderr, "Longitud: %d\n", strlen(caminofinal));
-    strcpy(caminofinal, destino);
-    fprintf(stderr, "Longitud: %d\n", strlen(caminofinal));
-    strcat(caminofinal, entrada.nombre);
-    fprintf(stderr, "Longitud: %d\n", strlen(caminofinal));
-    strcat(caminofinal, " ");
-    // Si queremos mover un directorio
-    caminofinal[strlen(caminofinal) - 1] = '/';
-    int a = strlen(destino);
-    int b = strlen(entrada.nombre);
-    int c = strlen(caminofinal);
-    int d = tam;
-    fprintf(stderr, "Nombre: %s\n", entrada.nombre);
-    fprintf(stderr, ORANGE "CAMINO FINAL %s || destino: %d, entrda: %d caminofinal: %d, tamaño: %d" RESET, caminofinal, a, b, c, d);
-
     // Vamos iterando todas las entradas del directorio
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n_entradas; i++)
     {
+
+        // Construimos el nuevo origen
+        char nuevo_origen[1024];
+
         if (leer_inodo(buffer_entradas[i].ninodo, &inodo) == FALLO)
             return FALLO;
 
         if (inodo.tipo == 'd')
         { // Si es un directorio, llamamos al método recursivamente
-            mi_copiar_d(origen, caminofinal);
+            snprintf(nuevo_origen, sizeof(nuevo_origen), "%s%s", origen, buffer_entradas[i].nombre);
+            mi_copiar_d(nuevo_origen, caminofinal);
         }
         else if (inodo.tipo == 'f')
         { // Si es un fichero, llamamos al método para copiar un fichero
-            mi_copiar_f(origen, caminofinal);
+            snprintf(nuevo_origen, sizeof(nuevo_origen), "%s/%s", origen, buffer_entradas[i].nombre);
+            mi_copiar_f(nuevo_origen, caminofinal);
         }
     }
 
-    // Liberamos la memoria del nuevo camino
-    free(caminofinal);
-
-    mi_copiar_f(origen, destino);
-
     return EXITO;
 }
-*/
+
 int mi_cp(const char *origen, const char *destino)
 {
     unsigned int p_inodo_dir = 0;
@@ -1176,7 +1151,7 @@ int mi_cp(const char *origen, const char *destino)
     }
     else
     {
-       // mi_copiar_d(origen, destino);
+        mi_copiar_d(origen, destino);
     }
 
     return EXITO;
