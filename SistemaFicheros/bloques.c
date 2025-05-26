@@ -4,6 +4,10 @@
  */
 
 #include "bloques.h"
+#include "semaforo_mutex_posix.h"
+
+static sem_t *mutex;
+static unsigned int inside_sc = 0;
 
 static int descriptor = 0; // Descriptor del fichero
 
@@ -15,9 +19,9 @@ static int descriptor = 0; // Descriptor del fichero
  */
 int bmount(const char *camino)
 {
-
     umask(000); // Permisos rw para todos los usuarios
 
+    // Abrimos el fichero con permisos de lectura y escritura
     descriptor = open(camino, O_RDWR | O_CREAT, 0666);
     if (descriptor == -1)
     {
@@ -25,6 +29,17 @@ int bmount(const char *camino)
         printf(RESET);
         return FALLO;
     }
+
+    // Inicializamos el semáforo mutex
+    if (!mutex)
+    { // el semáforo es único en el sistema y sólo se ha de inicializar 1 vez (padre)
+        mutex = initSem();
+        if (mutex == SEM_FAILED)
+        {
+            return -1;
+        }
+    }
+
     return descriptor;
 }
 
@@ -35,13 +50,17 @@ int bmount(const char *camino)
  */
 int bumount()
 {
-
+    // Comprobamos si el descriptor es válido
     if (close(descriptor) == -1)
     {
         perror(RED "close() error");
         printf(RESET);
         return FALLO;
     }
+
+    // Liberamos el semáforo mutex
+    deleteSem();
+
     return EXITO;
 }
 
@@ -101,4 +120,18 @@ int bread(unsigned int nbloque, void *buf)
     }
 
     return nbytes;
+}
+
+void mi_waitSem() {
+   if (!inside_sc) { // inside_sc==0, no se ha hecho ya un wait
+       waitSem(mutex);
+   }
+   inside_sc++;
+}
+
+void mi_signalSem() {
+   inside_sc--;
+   if (!inside_sc) {
+       signalSem(mutex);
+   }
 }
