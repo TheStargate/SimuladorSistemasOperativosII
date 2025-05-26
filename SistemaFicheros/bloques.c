@@ -21,6 +21,12 @@ int bmount(const char *camino)
 {
     umask(000); // Permisos rw para todos los usuarios
 
+    // Comprobamos si el descriptor ya está abierto
+    if (descriptor > 0)
+    {
+        close(descriptor);
+    }
+
     // Abrimos el fichero con permisos de lectura y escritura
     descriptor = open(camino, O_RDWR | O_CREAT, 0666);
     if (descriptor == -1)
@@ -49,7 +55,10 @@ int bmount(const char *camino)
  * @return EXITO si ha ido bien o FALLO si ha habido error
  */
 int bumount()
-{
+{   
+    // Comprobamos si el descriptor es válido
+    descriptor = close(descriptor);  //close() devuelve 0 en caso de éxito
+
     // Comprobamos si el descriptor es válido
     if (close(descriptor) == -1)
     {
@@ -122,16 +131,20 @@ int bread(unsigned int nbloque, void *buf)
     return nbytes;
 }
 
-void mi_waitSem() {
-   if (!inside_sc) { // inside_sc==0, no se ha hecho ya un wait
-       waitSem(mutex);
-   }
-   inside_sc++;
+void mi_waitSem()
+{
+    if (!inside_sc)
+    { // inside_sc==0, no se ha hecho ya un wait
+        waitSem(mutex);
+    }
+    inside_sc++;
 }
 
-void mi_signalSem() {
-   inside_sc--;
-   if (!inside_sc) {
-       signalSem(mutex);
-   }
+void mi_signalSem()
+{
+    inside_sc--;
+    if (!inside_sc)
+    {
+        signalSem(mutex);
+    }
 }
