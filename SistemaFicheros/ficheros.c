@@ -45,8 +45,9 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 
     if (primerBL == ultimoBL)
     {
-
+        mi_waitSem();
         int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 1);
+        mi_signalSem();
         if (bread(nbfisico, buf_bloque) == FALLO)
             return FALLO;
         memcpy(buf_bloque + desp1, buf_original, nbytes);
@@ -58,7 +59,9 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     else
     {
         // FASE 1
+        mi_waitSem();
         nbfisico = traducir_bloque_inodo(ninodo, primerBL, 1);
+        mi_signalSem();
         if (nbfisico == FALLO)
             return FALLO;
         if (bread(nbfisico, buf_bloque) == FALLO)
@@ -71,14 +74,18 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         // FASE 2
         for (int bl = primerBL + 1; bl < ultimoBL; bl++)
         {
+            mi_waitSem();
             nbfisico = traducir_bloque_inodo(ninodo, bl, 1);
+            mi_signalSem();
             if (bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (bl - primerBL - 1) * BLOCKSIZE) == FALLO)
                 return FALLO;
             bytes_escritos += BLOCKSIZE;
         }
 
         // FASE 3
+        mi_waitSem();
         nbfisico = traducir_bloque_inodo(ninodo, ultimoBL, 1);
+        mi_signalSem();
         if (bread(nbfisico, buf_bloque) == FALLO)
             return FALLO;
         memcpy(buf_bloque, buf_original + (nbytes - (desp2 + 1)), desp2 + 1);
@@ -87,8 +94,12 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         bytes_escritos += desp2 + 1;
     }
 
+    mi_waitSem();
     if (leer_inodo(ninodo, &inodo) == FALLO)
+    {
+        mi_signalSem();
         return FALLO;
+    }
 
     // Actualizar el tamaño lógico del archivo si hemos escrito más allá del EOF
     if (ultimoBL * BLOCKSIZE + desp2 + 1 > inodo.tamEnBytesLog)
@@ -100,7 +111,11 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 
     // Guardar los cambios en el inodo
     if (escribir_inodo(ninodo, &inodo) == FALLO)
+    {
+        mi_signalSem();
         return FALLO;
+    }
+    mi_signalSem();
 
     return bytes_escritos;
 }
@@ -119,8 +134,21 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 {
     struct inodo inodo;
 
+    mi_waitSem();
     if (leer_inodo(ninodo, &inodo) == FALLO)
+    {
+        mi_signalSem();
         return FALLO;
+    }
+
+    inodo.atime = time(NULL);
+    
+    if (escribir_inodo(ninodo, &inodo) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
+    mi_signalSem();
 
     int bytesLeidos = 0;
     int nbfisico;
@@ -158,8 +186,6 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     if (primerBL == ultimoBL)
     {
 
-        
-
         int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 0);
         if (nbfisico != FALLO)
         {
@@ -167,15 +193,11 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
                 return FALLO;
 
             memcpy(buf_original, buf_bloque + desp1, nbytes);
-
         }
-            bytesLeidos = nbytes;
-
+        bytesLeidos = nbytes;
     }
     else // Contemplar el caso en que el fichero/directorio ocupe más de un bloque lógico
     {
-
-      
 
         // FASE 1
         nbfisico = traducir_bloque_inodo(ninodo, primerBL, 0);
@@ -210,8 +232,6 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         }
         bytesLeidos += desp2 + 1;
     }
-
-    inodo.atime = time(NULL);
 
     return bytesLeidos;
 }
@@ -260,9 +280,11 @@ int mi_chmod_f(unsigned int ninodo, unsigned char permisos)
 {
     struct inodo inodo;
 
+    mi_waitSem();
     // Leer el inodo
     if (leer_inodo(ninodo, &inodo) == FALLO)
     {
+        mi_signalSem();
         return FALLO;
     }
 
@@ -275,8 +297,10 @@ int mi_chmod_f(unsigned int ninodo, unsigned char permisos)
     // Escribir el inodo modificado
     if (escribir_inodo(ninodo, &inodo) == FALLO)
     {
+        mi_signalSem();
         return FALLO;
     }
+    mi_signalSem();
 
     return EXITO;
 }

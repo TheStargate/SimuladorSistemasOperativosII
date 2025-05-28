@@ -3,11 +3,11 @@
 #include <stdio.h>
 #include <errno.h>
 
-#define RED   "\x1b[31m"
+#define RED "\x1b[31m"
 #define RESET "\x1b[0m"
 
-#define EXITO  0
-#define FALLO  -1
+#define EXITO 0
+#define FALLO -1
 
 static sem_t *g_sem = NULL;
 
@@ -20,13 +20,15 @@ static sem_t *g_sem = NULL;
  *
  * @return Puntero al semáforo inicializado en caso de éxito, FALLO en caso de error.
  */
-sem_t *initSem() {
+sem_t *initSem()
+{
     /* Si ya existía, lo eliminamos para garantizar un estado limpio */
     sem_unlink(SEM_NAME);
 
     /* Creamos el semáforo nombrado con permiso rwx para el usuario */
     g_sem = sem_open(SEM_NAME, O_CREAT | O_EXCL, S_IRWXU, SEM_INIT_VALUE);
-    if (g_sem == SEM_FAILED) {
+    if (g_sem == SEM_FAILED)
+    {
         fprintf(stderr, RED "Error al crear semáforo\n" RESET);
         return (sem_t *)FALLO;
     }
@@ -39,15 +41,19 @@ sem_t *initSem() {
  * Si el semáforo estaba abierto, lo cierra con sem_close().
  * Después elimina el nombre para que no quede residual en el sistema.
  */
-void deleteSem() {
-    if (g_sem) {
-        if (sem_close(g_sem) < 0) {
+void deleteSem()
+{
+    if (g_sem)
+    {
+        if (sem_close(g_sem) < 0)
+        {
             fprintf(stderr, RED "Error cerrando semáforo\n" RESET);
         }
         g_sem = NULL;
     }
     /* Eliminamos el nombre para que no quede residual en el sistema */
-    if (sem_unlink(SEM_NAME) < 0) {
+    if (sem_unlink(SEM_NAME) < 0)
+    {
         fprintf(stderr, RED "Error eliminando nombre de semáforo\n" RESET);
     }
 }
@@ -59,8 +65,10 @@ void deleteSem() {
  *
  * @param sem Puntero al semáforo que se desea señalizar.
  */
-void signalSem(sem_t *sem) {
-    if (sem_post(sem) < 0) {
+void signalSem(sem_t *sem)
+{
+    if (sem_post(sem) < 0)
+    {
         fprintf(stderr, RED "Error en sem_post\n" RESET);
     }
 }
@@ -73,8 +81,10 @@ void signalSem(sem_t *sem) {
  *
  * @param sem Puntero al semáforo que se desea esperar.
  */
-void waitSem(sem_t *sem) {
-    if (sem_wait(sem) < 0) {
+void waitSem(sem_t *sem)
+{
+    if (sem_wait(sem) < 0)
+    {
         fprintf(stderr, RED "Error en sem_wait\n" RESET);
     }
 }

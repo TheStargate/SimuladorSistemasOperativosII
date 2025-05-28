@@ -286,11 +286,21 @@ void mostrar_error_buscar_entrada(int error)
  */
 int mi_creat(const char *camino, unsigned char permisos)
 {
+    mi_waitSem();
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
 
-    return buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 1, permisos);
+    if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 1, permisos) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
+    else
+    {
+        mi_signalSem();
+        return EXITO;
+    }
 }
 
 /**
@@ -443,7 +453,9 @@ int mi_stat(const char *camino, struct STAT *p_stat)
         return FALLO;
     }
 
+#if DEBUGN8
     fprintf(stderr, BLUE "\nNº de inodo: %d\n" RESET, p_inodo);
+#endif
 
     return mi_stat_f(p_inodo, p_stat);
 }
@@ -626,6 +638,8 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
  */
 int mi_link(const char *camino1, const char *camino2)
 {
+    mi_waitSem();
+
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
@@ -639,20 +653,26 @@ int mi_link(const char *camino1, const char *camino2)
 
     if (buscar_entrada(camino1, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) <= FALLO)
     {
+        mi_signalSem();
         return FALLO;
     }
 
-    leer_inodo(p_inodo, &inodo1);
-
+    if (leer_inodo(p_inodo, &inodo1) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
     // Comprobamos que tenemos permisos de lectura
     if (inodo1.permisos < 4)
     {
+        mi_signalSem();
         return FALLO;
     }
 
     // Comprobamos que el camino sea a un fichero
     if (inodo1.tipo != 'f')
     {
+        mi_signalSem();
         return FALLO;
     }
 
@@ -665,6 +685,7 @@ int mi_link(const char *camino1, const char *camino2)
     // Leemos la entrada de camino2
     if (mi_read_f(p_inodo_dir2, &entrada, p_entrada2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
+        mi_signalSem();
         return FALLO;
     }
 
@@ -672,6 +693,7 @@ int mi_link(const char *camino1, const char *camino2)
     entrada.ninodo = p_inodo;
     if (mi_write_f(p_inodo_dir2, &entrada, p_entrada2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
     {
+        mi_signalSem();
         return FALLO;
     }
 
@@ -683,6 +705,7 @@ int mi_link(const char *camino1, const char *camino2)
 
     escribir_inodo(p_inodo, &inodo1);
 
+    mi_signalSem();
     return EXITO;
 }
 
@@ -698,6 +721,8 @@ int mi_link(const char *camino1, const char *camino2)
  */
 int mi_unlink(const char *camino)
 {
+    mi_waitSem();
+
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
@@ -707,11 +732,13 @@ int mi_unlink(const char *camino)
 
     if (buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 7) <= FALLO)
     {
+        mi_signalSem();
         return FALLO;
     }
 
     if (leer_inodo(p_inodo, &inodo) == FALLO)
     {
+        mi_signalSem();
         return FALLO;
     }
 
@@ -721,13 +748,14 @@ int mi_unlink(const char *camino)
 #if DEBUGN10
         fprintf(stderr, RED "Error: el directorio %s no está vacío\n" RESET, camino);
 #endif
-
+        mi_signalSem();
         return FALLO; // No se puede borrar porque no está vacío.
     }
     else
     {
         if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO)
         {
+            mi_signalSem();
             return FALLO;
         }
         unsigned int n_Entradas_Dir = inodo_dir.tamEnBytesLog / sizeof(struct entrada);
@@ -736,6 +764,7 @@ int mi_unlink(const char *camino)
         { // Le restamos el tamaño de una entrada para posicionarnos justo encima de la últime entrada
             if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
             {
+                mi_signalSem();
                 return FALLO;
             }
         }
@@ -745,16 +774,19 @@ int mi_unlink(const char *camino)
             // Leemos la última entrada ya que es la que borraremos con mi_truncar_f pero los datos de la última entrada no son los que queremos borrar.
             if (mi_read_f(p_inodo_dir, &ultimaEntrada, inodo_dir.tamEnBytesLog - sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
             {
+                mi_signalSem();
                 return FALLO;
             }
             // Escribimos en la entrada que queríamos eliminar la ultima entrada y luego eliminamos la última entrada.
             if (mi_write_f(p_inodo_dir, &ultimaEntrada, p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
             {
+                mi_signalSem();
                 return FALLO;
             }
 
             if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
             {
+                mi_signalSem();
                 return FALLO;
             }
         }
@@ -763,6 +795,7 @@ int mi_unlink(const char *camino)
         {
             if (liberar_inodo(p_inodo) == FALLO)
             {
+                mi_signalSem();
                 return FALLO;
             }
         }
@@ -770,9 +803,13 @@ int mi_unlink(const char *camino)
         {
             inodo.ctime = time(NULL);
             if (escribir_inodo(p_inodo, &inodo) == FALLO)
+            {
+                mi_signalSem();
                 return FALLO;
+            }
         }
     }
+    mi_signalSem();
     return EXITO;
 }
 

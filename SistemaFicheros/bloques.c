@@ -35,7 +35,6 @@ int bmount(const char *camino)
         printf(RESET);
         return FALLO;
     }
-
     // Inicializamos el semáforo mutex
     if (!mutex)
     { // el semáforo es único en el sistema y sólo se ha de inicializar 1 vez (padre)
@@ -56,7 +55,6 @@ int bmount(const char *camino)
  */
 int bumount()
 {   
-    // Comprobamos si el descriptor es válido
     descriptor = close(descriptor);  //close() devuelve 0 en caso de éxito
 
     // Comprobamos si el descriptor es válido
@@ -66,7 +64,7 @@ int bumount()
         printf(RESET);
         return FALLO;
     }
-
+    
     // Liberamos el semáforo mutex
     deleteSem();
 
