@@ -51,6 +51,14 @@ int main(int argc, char *argv[])
     for (int i = 0; i < NUMPROCESOS; i++)
     {
         pid_t pid = fork();
+
+        if (pid == -1)
+        {
+            perror(RED "fork() error");
+            printf(RESET);
+            return FALLO;
+        }
+
         if (pid == 0)
         {
             if (bmount(argv[1]) == FALLO)
@@ -83,14 +91,14 @@ int main(int argc, char *argv[])
             struct REGISTRO reg;
             for (int j = 1; j <= ESCRITURAS; j++)
             {
-                reg.fecha = time(NULL);
+                gettimeofday(&reg.fecha, NULL);
                 reg.pid = mi_pid;
                 reg.nEscritura = j;
                 reg.nRegistro = rand() % REGMAX;
 
                 off_t offset = reg.nRegistro * sizeof(struct REGISTRO);
 
-                //fprintf(stdout, "[simulación.c → Escritura %d en %s]\n", reg.nEscritura, fichero);
+                // fprintf(stdout, "[simulación.c → Escritura %d en %s]\n", reg.nEscritura, fichero);
 
                 if (mi_write(fichero, &reg, offset, sizeof(struct REGISTRO)) == FALLO)
                 {

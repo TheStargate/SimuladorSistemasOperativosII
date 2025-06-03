@@ -120,8 +120,8 @@ int main(int argc, char *argv[])
             memset(buffer_escrituras, 0, sizeof(buffer_escrituras)); // Limpieza
         }
 
-        fprintf(stderr, GRAY "[%d) %d escrituras validadas en %s]\n" RESET, (i+1), info.nEscrituras, path_prueba);
-        
+        fprintf(stderr, GRAY "[%d) %d escrituras validadas en %s]\n" RESET, (i + 1), info.nEscrituras, path_prueba);
+
         // Escribir resultados en informe
         char linea[500], fecha[100];
 
@@ -137,20 +137,20 @@ int main(int argc, char *argv[])
         sprintf(linea, "PID: %d\nNúmero de escrituras: %d\n", info.pid, info.nEscrituras);
         offset += mi_write(informe_path, linea, offset, strlen(linea));
 
-        strftime(fecha, sizeof(fecha), "%a %b %d %T %Y", localtime(&info.PrimeraEscritura.fecha));
-        sprintf(linea, "Primera Escritura\t%u\t%u\t%s\n", info.PrimeraEscritura.nEscritura, info.PrimeraEscritura.nRegistro, fecha);
+        strftime(fecha, sizeof(fecha), "%a %b %d %H:%M:%S", localtime(&info.PrimeraEscritura.fecha.tv_sec));
+        sprintf(linea, "Primera Escritura\t%u\t%u\t%s.%06ld\n", info.PrimeraEscritura.nEscritura, info.PrimeraEscritura.nRegistro, fecha, info.PrimeraEscritura.fecha.tv_usec);
         offset += mi_write(informe_path, linea, offset, strlen(linea));
 
-        strftime(fecha, sizeof(fecha), "%a %b %d %T %Y", localtime(&info.UltimaEscritura.fecha));
-        sprintf(linea, "Última Escritura\t%u\t%u\t%s\n", info.UltimaEscritura.nEscritura, info.UltimaEscritura.nRegistro, fecha);
+        strftime(fecha, sizeof(fecha), "%a %b %d %H:%M:%S", localtime(&info.UltimaEscritura.fecha.tv_sec));
+        sprintf(linea, "Última Escritura\t%u\t%u\t%s.%06ld\n", info.UltimaEscritura.nEscritura, info.UltimaEscritura.nRegistro, fecha, info.UltimaEscritura.fecha.tv_usec);
         offset += mi_write(informe_path, linea, offset, strlen(linea));
 
-        strftime(fecha, sizeof(fecha), "%a %b %d %T %Y", localtime(&info.MenorPosicion.fecha));
-        sprintf(linea, "Menor Posición\t\t%u\t%u\t%s\n", info.MenorPosicion.nEscritura, info.MenorPosicion.nRegistro, fecha);
+        strftime(fecha, sizeof(fecha), "%a %b %d %H:%M:%S", localtime(&info.MenorPosicion.fecha.tv_sec));
+        sprintf(linea, "Menor Posición\t\t%u\t%u\t%s.%06ld\n", info.MenorPosicion.nEscritura, info.MenorPosicion.nRegistro, fecha, info.MenorPosicion.fecha.tv_usec);
         offset += mi_write(informe_path, linea, offset, strlen(linea));
 
-        strftime(fecha, sizeof(fecha), "%a %b %d %T %Y", localtime(&info.MayorPosicion.fecha));
-        sprintf(linea, "Mayor Posición\t\t%u\t%u\t%s\n\n", info.MayorPosicion.nEscritura, info.MayorPosicion.nRegistro, fecha);
+        strftime(fecha, sizeof(fecha), "%a %b %d %H:%M:%S", localtime(&info.MayorPosicion.fecha.tv_sec));
+        sprintf(linea, "Mayor Posición\t\t%u\t%u\t%s.%06ld\n\n", info.MayorPosicion.nEscritura, info.MayorPosicion.nRegistro, fecha, info.MayorPosicion.fecha.tv_usec);
         offset += mi_write(informe_path, linea, offset, strlen(linea));
     }
 

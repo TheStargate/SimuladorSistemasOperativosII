@@ -346,7 +346,7 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         return FALLO;
     }
 
-    struct entrada buffer_entradas[BLOCKSIZE / sizeof(struct entrada)];
+    struct entrada buffer_entradas[1024];
     memset(buffer_entradas, 0, sizeof(buffer_entradas));
     int n;
 
