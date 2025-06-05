@@ -18,15 +18,17 @@
 #define DEBUGN10 0
 #define DEBUGNEXT 0
 
+#define INDICEBINARIO 1 // Mejora para obtener el índice en binario
+
 #define posSB 0 // el superbloque se escribe en el primer bloque de nuestro FS
 #define tamSB 1
 
-#define INODOSIZE 128 // tamaño en bytes de un inodo
-#define BYTE 8        // tamaño en bits de un Byte
+#define INODOSIZE 128                                // tamaño en bytes de un inodo
+#define BYTE 8                                       // tamaño en bits de un Byte
 #define NPUNTEROS (BLOCKSIZE / sizeof(unsigned int)) // 256 punteros por bloque
 #define DIRECTOS 12
-#define INDIRECTOS0 (NPUNTEROS + DIRECTOS) // 268
-#define INDIRECTOS1 (NPUNTEROS * NPUNTEROS + INDIRECTOS0) // 65.804
+#define INDIRECTOS0 (NPUNTEROS + DIRECTOS)                            // 268
+#define INDIRECTOS1 (NPUNTEROS * NPUNTEROS + INDIRECTOS0)             // 65.804
 #define INDIRECTOS2 (NPUNTEROS * NPUNTEROS * NPUNTEROS + INDIRECTOS1) // 16.843.020
 
 struct superbloque
@@ -71,7 +73,6 @@ struct inodo
     // Fijarse que también se resta lo que ocupen las variables de alineación utilizadas!!!
 };
 
-
 int tamMB(unsigned int nbloques);
 int tamAI(unsigned int ninodos);
 int initSB(unsigned int nbloques, unsigned int ninodos);
@@ -91,4 +92,4 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros);
 int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *ent);
 
 int liberar_inodo(unsigned int ninodo);
-int liberar_bloques_inodo (unsigned int primerBL, struct inodo *inodo);
+int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo);

@@ -5,11 +5,29 @@
 
 #include "bloques.h"
 #include "semaforo_mutex_posix.h"
+#include <sys/mman.h>
 
 static sem_t *mutex;
 static unsigned int inside_sc = 0;
 
+#if MMAP==1
+static void *ptrSFM; // puntero a memoria compartida
+#endif
+static int tamSFM;   // tamaño memoria compartida
+
 static int descriptor = 0; // Descriptor del fichero
+
+// Función para realizar mapeado en memoria
+void *do_mmap(int fd)
+{
+    struct stat st;
+    void *ptr;
+    fstat(fd, &st);
+    tamSFM = st.st_size;
+    if ((ptr = mmap(NULL, tamSFM, PROT_WRITE, MAP_SHARED, fd, 0)) == (void *)-1)
+        fprintf(stderr, "Error %d: %s\n", errno, strerror(errno));
+    return ptr;
+}
 
 /**
  * Función para montar el dispositivo virtual (abrir el fichero)
@@ -35,6 +53,12 @@ int bmount(const char *camino)
         printf(RESET);
         return FALLO;
     }
+
+#if MMAP == 1
+    // Hacemos el mmap
+    ptrSFM = do_mmap(descriptor);
+#endif
+
     // Inicializamos el semáforo mutex
     if (!mutex)
     { // el semáforo es único en el sistema y sólo se ha de inicializar 1 vez (padre)
@@ -54,8 +78,27 @@ int bmount(const char *camino)
  * @return EXITO si ha ido bien o FALLO si ha habido error
  */
 int bumount()
-{   
-    descriptor = close(descriptor);  //close() devuelve 0 en caso de éxito
+{
+
+#if MMAP == 1
+    // Sincronizamos los cambios con el fichero en disco
+    if (msync(ptrSFM, tamSFM, MS_SYNC) == -1)
+    {
+        perror(RED "msync() error");
+        printf(RESET);
+        return FALLO;
+    }
+
+    // Liberamos la memoria mapeada
+    if (munmap(ptrSFM, tamSFM) == -1)
+    {
+        perror(RED "munmap() error");
+        printf(RESET);
+        return FALLO;
+    }
+#endif
+
+    descriptor = close(descriptor); // close() devuelve 0 en caso de éxito
 
     // Comprobamos si el descriptor es válido
     if (close(descriptor) == -1)
@@ -64,7 +107,7 @@ int bumount()
         printf(RESET);
         return FALLO;
     }
-    
+
     // Liberamos el semáforo mutex
     deleteSem();
 
@@ -81,6 +124,7 @@ int bumount()
 int bwrite(unsigned int nbloque, const void *buf)
 {
 
+#if MMAP == 0
     if (lseek(descriptor, (nbloque * BLOCKSIZE), SEEK_SET) == -1)
     {
         perror(RED "lseek() error");
@@ -96,6 +140,25 @@ int bwrite(unsigned int nbloque, const void *buf)
         printf(RESET);
         return FALLO;
     }
+#endif
+
+#if MMAP == 1
+    int pos = nbloque * BLOCKSIZE;
+    int nbytes = BLOCKSIZE;
+
+    if (pos >= tamSFM)
+    {
+        fprintf(stderr, RED "bwrite() fuera de rango\n" RESET);
+        return FALLO;
+    }
+
+    if (pos + nbytes > tamSFM)
+    {
+        nbytes = tamSFM - pos;
+    }
+
+    memcpy(ptrSFM + pos, buf, nbytes);
+#endif
 
     return nbytes;
 }
@@ -110,6 +173,7 @@ int bwrite(unsigned int nbloque, const void *buf)
 int bread(unsigned int nbloque, void *buf)
 {
 
+#if MMAP == 0
     if (lseek(descriptor, (nbloque * BLOCKSIZE), SEEK_SET) == -1)
     {
         perror(RED "lseek() error");
@@ -125,6 +189,27 @@ int bread(unsigned int nbloque, void *buf)
         printf(RESET);
         return FALLO;
     }
+#endif
+
+#if MMAP == 1
+    int pos = nbloque * BLOCKSIZE;
+    int nbytes = BLOCKSIZE;
+
+    if (pos >= tamSFM)
+    {
+        fprintf(stderr, RED "bread() fuera de rango\n" RESET);
+        return FALLO;
+    }
+
+    if (pos + nbytes > tamSFM)
+    {
+        nbytes = tamSFM - pos;
+    }
+
+    memcpy(buf, ptrSFM + pos, nbytes);
+
+    return nbytes;
+#endif
 
     return nbytes;
 }

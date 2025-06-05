@@ -460,10 +460,10 @@ int mi_stat(const char *camino, struct STAT *p_stat)
     return mi_stat_f(p_inodo, p_stat);
 }
 
-// Guarda las últimas entradas para escritura (caché LRU)
+// Guarda las últimas entradas para escritura
 static struct UltimaEntrada UltimasEntradasE[CACHE_SIZE];
 
-// Guarda las últimas entradas para lectura (caché LRU)
+// Guarda las últimas entradas para lectura
 static struct UltimaEntrada UltimasEntradasL[CACHE_SIZE];
 
 /**
@@ -483,7 +483,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
     int bytesEscritos;
-    int lru_index = 0;
+    int cache_index = 0;
     int entradaEnCache = FALLO;
 
     // Comprobamos si encontramos el camino actual en la caché
@@ -494,10 +494,11 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
             // Si coincide, usamos el inodo almacenado en la caché
             p_inodo = UltimasEntradasE[i].p_inodo;
 
+#if USARCACHE == 3
             // Actualizar tiempo de acceso
             gettimeofday(&UltimasEntradasE[i].ultima_consulta, NULL);
-
-            lru_index = i;
+#endif
+            cache_index = i;
             entradaEnCache = EXITO;
         }
     }
@@ -510,31 +511,44 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
             return FALLO;
         }
 
-        // Actualizamos la caché LRU con la nueva entrada encontrada
+        // Actualizamos la caché con la nueva entrada encontrada
         struct timeval tiempoActual;
         gettimeofday(&tiempoActual, NULL);
 
-        // Buscar la entrada usada hace más tiempo para substituirla
+        // Buscar la entrada usada hace más tiempo (o la más antigua si es FIFO) para substituirla
         for (int i = 0; i < CACHE_SIZE; i++)
         {
-            if (timercmp(&UltimasEntradasE[i].ultima_consulta, &UltimasEntradasE[lru_index].ultima_consulta, <))
+#if USARCACHE == 3
+            if (timercmp(&UltimasEntradasE[i].ultima_consulta, &UltimasEntradasE[cache_index].ultima_consulta, <))
             {
-                lru_index = i;
+                cache_index = i;
             }
+#endif
+#if USARCACHE == 2
+            if (timercmp(&UltimasEntradasE[i].primera_consulta, &UltimasEntradasE[cache_index].primera_consulta, <))
+            {
+                cache_index = i;
+            }
+#endif
         }
 
 #if DEBUGN9
-        fprintf(stderr, ORANGE "[mi_write() → Reemplazamos cache[%d]: %s]\n" RESET, lru_index, camino);
+        fprintf(stderr, ORANGE "[mi_write() → Reemplazamos cache[%d]: %s]\n" RESET, cache_index, camino);
 #endif
 
-        strcpy(UltimasEntradasE[lru_index].camino, camino);
-        UltimasEntradasE[lru_index].p_inodo = p_inodo;
-        UltimasEntradasE[lru_index].ultima_consulta = tiempoActual;
+        strcpy(UltimasEntradasE[cache_index].camino, camino);
+        UltimasEntradasE[cache_index].p_inodo = p_inodo;
+#if USARCACHE == 3
+        UltimasEntradasE[cache_index].ultima_consulta = tiempoActual;
+#endif
+#if USARCACHE == 2
+        UltimasEntradasE[cache_index].primera_consulta = tiempoActual;
+#endif
     }
     else
     {
 #if DEBUGN9
-        fprintf(stderr, BLUE "\n[mi_write() → Utilizamos cache[%d]: %s]\n" RESET, lru_index, camino);
+        fprintf(stderr, BLUE "\n[mi_write() → Utilizamos cache[%d]: %s]\n" RESET, cache_index, camino);
 #endif
     }
 
@@ -565,7 +579,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
     int bytesLeidos;
-    int lru_index = 0;
+    int cache_index = 0;
     int entradaEnCache = FALLO;
 
     // Comprobamos si encontramos el camino actual en la caché
@@ -576,10 +590,11 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             // Si coincide, usamos el inodo almacenado en la caché
             p_inodo = UltimasEntradasL[i].p_inodo;
 
+#if USARCACHE == 3
             // Actualizar tiempo de acceso
             gettimeofday(&UltimasEntradasL[i].ultima_consulta, NULL);
-
-            lru_index = i;
+#endif
+            cache_index = i;
             entradaEnCache = EXITO;
         }
     }
@@ -592,9 +607,9 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             return FALLO;
         }
 
-// Actualizamos la caché LRU con la nueva entrada encontrada
+// Actualizamos la caché con la nueva entrada encontrada
 #if DEBUGN9
-        fprintf(stderr, ORANGE "[mi_read() → Reemplazamos cache[%d]: %s]\n" RESET, lru_index, camino);
+        fprintf(stderr, ORANGE "[mi_read() → Reemplazamos cache[%d]: %s]\n" RESET, cache_index, camino);
 #endif
 
         struct timeval tiempoActual;
@@ -603,20 +618,33 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
         // Buscar la entrada usada hace más tiempo para substituirla
         for (int i = 0; i < CACHE_SIZE; i++)
         {
-            if (timercmp(&UltimasEntradasL[i].ultima_consulta, &UltimasEntradasL[lru_index].ultima_consulta, <))
+#if USARCACHE == 3
+            if (timercmp(&UltimasEntradasE[i].ultima_consulta, &UltimasEntradasE[cache_index].ultima_consulta, <))
             {
-                lru_index = i;
+                cache_index = i;
             }
+#endif
+#if USARCACHE == 2
+            if (timercmp(&UltimasEntradasE[i].primera_consulta, &UltimasEntradasE[cache_index].primera_consulta, <))
+            {
+                cache_index = i;
+            }
+#endif
         }
 
-        strcpy(UltimasEntradasL[lru_index].camino, camino);
-        UltimasEntradasL[lru_index].p_inodo = p_inodo;
-        UltimasEntradasL[lru_index].ultima_consulta = tiempoActual;
+        strcpy(UltimasEntradasL[cache_index].camino, camino);
+        UltimasEntradasL[cache_index].p_inodo = p_inodo;
+#if USARCACHE == 3
+        UltimasEntradasL[cache_index].ultima_consulta = tiempoActual;
+#endif
+#if USARCACHE == 2
+        UltimasEntradasE[cache_index].primera_consulta = tiempoActual;
+#endif
     }
     else
     {
 #if DEBUGN9
-        fprintf(stderr, BLUE "\n[mi_read() → Utilizamos cache[%d]: %s]\n" RESET, lru_index, camino);
+        fprintf(stderr, BLUE "\n[mi_read() → Utilizamos cache[%d]: %s]\n" RESET, cache_index, camino);
 #endif
     }
 

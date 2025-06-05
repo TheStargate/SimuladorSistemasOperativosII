@@ -13,13 +13,16 @@ struct entrada
   unsigned int ninodo;
 };
 
-#define USARCACHE 3  // 0:sin caché, 1: última L/E, 2:tabla FIFO, 3:tabla LRU
+#define USARCACHE 2  // 0:sin caché, 1: última L/E, 2:tabla FIFO, 3:tabla LRU
 #define CACHE_SIZE 3 // Tamaño de caché para las entradas
 
 struct UltimaEntrada
 {
   char camino[TAMNOMBRE * PROFUNDIDAD];
   int p_inodo;
+#if USARCACHE == 2 // tabla FIFO
+  struct timeval primera_consulta;
+#endif
 #if USARCACHE == 3 // tabla LRU
   struct timeval ultima_consulta;
 #endif

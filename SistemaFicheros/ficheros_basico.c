@@ -612,7 +612,8 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
  */
 int obtener_indice(unsigned int nblogico, int nivel_punteros)
 {
-    // Calculamos el ndice a partir del nivel de punteros en el que nos encontramos
+#if INDICEBINARIO == 0
+    // Calculamos el indice decimal a partir del nivel de punteros en el que nos encontramos
     if (nblogico < DIRECTOS) // <12
     {
         return nblogico;
@@ -656,6 +657,55 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros)
             return FALLO;
         }
     }
+#endif
+#if INDICEBINARIO == 1
+    // Calculamos el indice binario a partir del nivel de punteros en el que nos encontramos
+    if (nblogico < DIRECTOS)
+    {
+        return nblogico;
+    }
+
+    unsigned int nblogico_rel;
+
+    if (nblogico < INDIRECTOS0)
+    {
+        // Nivel de punteros simple
+        nblogico_rel = nblogico - DIRECTOS;
+        return nblogico_rel;
+    }
+
+    if (nblogico < INDIRECTOS1)
+    {
+        // Puntero doble
+        nblogico_rel = nblogico - INDIRECTOS0;
+        if (nivel_punteros == 2)
+        {
+            return (nblogico_rel >> 8) & 0xFF; // bits 15-8
+        }
+        else if (nivel_punteros == 1)
+        {
+            return nblogico_rel & 0xFF; // bits 7-0
+        }
+    }
+
+    if (nblogico < INDIRECTOS2)
+    {
+        // Puntero triple
+        nblogico_rel = nblogico - INDIRECTOS1;
+        if (nivel_punteros == 3)
+        {
+            return (nblogico_rel >> 16) & 0xFF; // bits 23-16
+        }
+        else if (nivel_punteros == 2)
+        {
+            return (nblogico_rel >> 8) & 0xFF; // bits 15-8
+        }
+        else if (nivel_punteros == 1)
+        {
+            return nblogico_rel & 0xFF; // bits 7-0
+        }
+    }
+#endif
     printf(RED "Bloque lógico fuera de rango");
     printf(RESET);
     return FALLO;

@@ -53,10 +53,7 @@ void deleteSem()
     }
     
     /* Eliminamos el nombre para que no quede residual en el sistema */
-    if (sem_unlink(SEM_NAME) < 0)
-    {
-       // fprintf(stderr, RED "Error eliminando nombre de semáforo\n" RESET);
-    }
+    sem_unlink(SEM_NAME);
 }
 
 /**

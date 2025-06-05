@@ -16,6 +16,8 @@
 #define EXITO 0  // para gestión errores
 #define FALLO -1 // para gestión errores
 
+#define MMAP 1 // Activar mmap
+
 #define BLACK "\x1B[30m"
 #define RED "\x1b[31m"
 #define GREEN "\x1b[32m"
